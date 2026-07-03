@@ -8,11 +8,14 @@ import { signOut } from "firebase/auth";
 import { db, auth } from "@/lib/firebase";
 import CaptureForm from "@/components/CaptureForm";
 import IdeaCard from "@/components/IdeaCard";
+import VerifyForm from "@/components/VerifyForm";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [ideas, setIdeas] = useState([]);
+  // Track which tab is active: "capture" or "verify"
+  const [activeTab, setActiveTab] = useState("capture");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -64,11 +67,31 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 pt-6 space-y-6">
-        <section>
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab("capture")}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === "capture"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
             Capture
-          </h2>
-          <CaptureForm />
+          </button>
+          <button
+            onClick={() => setActiveTab("verify")}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === "verify"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            Verify
+          </button>
+        </div>
+
+        <section>
+          {activeTab === "capture" ? <CaptureForm /> : <VerifyForm />}
         </section>
 
         <section>
