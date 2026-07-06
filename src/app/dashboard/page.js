@@ -55,52 +55,68 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen pb-8">
-      <header className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
-        <h1 className="text-lg font-bold text-gray-900">Originly</h1>
-        <button
-          onClick={handleSignOut}
-          className="text-sm text-gray-500 hover:text-gray-900"
-        >
-          Sign out
-        </button>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 pt-6 space-y-6">
-        <div className="flex gap-2">
+    <div className="min-h-screen pb-8 bg-slate-950 text-slate-100">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/95 backdrop-blur-xl px-4 py-4">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Secure idea vault</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Originly</h1>
+          </div>
           <button
-            onClick={() => setActiveTab("capture")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === "capture"
-                ? "bg-gray-900 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
+            onClick={handleSignOut}
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 transition hover:bg-white/10"
           >
-            Capture
-          </button>
-          <button
-            onClick={() => setActiveTab("verify")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === "verify"
-                ? "bg-gray-900 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Verify
+            Sign out
           </button>
         </div>
+      </header>
 
-        <section>
-          {activeTab === "capture" ? <CaptureForm /> : <VerifyForm />}
-        </section>
+      <main className="max-w-3xl mx-auto px-4 pt-6 space-y-6">
+        <div className="glass-card overflow-hidden rounded-[2rem] border-white/10 p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div>
+              <h2 className="text-xl font-semibold">Capture ideas</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                Keep the black-and-white theme while giving the dashboard a cleaner, modern look.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab("capture")}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  activeTab === "capture"
+                    ? "bg-slate-100 text-slate-950"
+                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                Capture
+              </button>
+              <button
+                onClick={() => setActiveTab("verify")}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  activeTab === "verify"
+                    ? "bg-slate-100 text-slate-950"
+                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                Verify
+              </button>
+            </div>
+          </div>
 
-        <section>
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-            Your Vault ({ideas.length})
-          </h2>
-          <div className="space-y-3">
+          <section>{activeTab === "capture" ? <CaptureForm /> : <VerifyForm />}</section>
+        </div>
+
+        <section className="glass-card rounded-[2rem] border-white/10 p-6">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Your Vault</p>
+              <h2 className="text-2xl font-semibold">{ideas.length} idea{ideas.length === 1 ? "" : "s"}</h2>
+            </div>
+          </div>
+          <div className="space-y-4">
             {ideas.length === 0 ? (
-              <p className="text-gray-400 text-center py-8">
+              <p className="text-slate-400 text-center py-10">
                 No ideas yet. Capture your first one above.
               </p>
             ) : (

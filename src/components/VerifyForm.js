@@ -73,18 +73,13 @@ export default function VerifyForm() {
 
       {result && (
         <div
-          className={`mt-4 p-4 rounded-lg border ${
+          className={`mt-4 p-4 rounded-3xl border ${
             result.match
-              ? "bg-green-50 border-green-200 text-green-800"
-              : "bg-red-50 border-red-200 text-red-800"
+              ? "bg-emerald-950/70 border-emerald-500/20 text-emerald-100"
+              : "bg-rose-950/70 border-rose-500/20 text-rose-100"
           }`}
         >
           <p className="text-sm font-medium">{result.message}</p>
-          {result.hash && (
-            <p className="text-xs font-mono mt-2 break-all opacity-70">
-              SHA-256: {result.hash}
-            </p>
-          )}
         </div>
       )}
     </form>
