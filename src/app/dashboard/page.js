@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
@@ -67,6 +68,12 @@ export default function DashboardPage() {
               <p className="text-sm text-slate-300">{user.displayName || user.email}</p>
               <p className="text-xs text-slate-500">Logged in</p>
             </div>
+            <Link
+              href="/community"
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 transition hover:bg-white/10"
+            >
+              Community
+            </Link>
             <button
               onClick={handleSignOut}
               className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 transition hover:bg-white/10"
