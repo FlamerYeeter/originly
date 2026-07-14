@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { generateHash } from "@/lib/hash";
-import { uploadIdeaFile } from "@/lib/supabase";
+import { uploadIdeaFiles } from "@/lib/supabase";
 
 export default function CaptureForm() {
   const [content, setContent] = useState("");
@@ -15,8 +15,8 @@ export default function CaptureForm() {
   const [locationFetching, setLocationFetching] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
   const [fileMessage, setFileMessage] = useState("");
   const { user } = useAuth();
 
@@ -83,13 +83,13 @@ export default function CaptureForm() {
     setSaving(true);
     setFileMessage("");
     try {
-      let uploadedFile = null;
+      let uploadedFiles = [];
 
-      if (selectedFile) {
-        setUploadingFile(true);
-        setFileMessage("Uploading file...");
-        uploadedFile = await uploadIdeaFile(selectedFile, user.uid);
-        setFileMessage("File uploaded.");
+      if (selectedFiles.length > 0) {
+        setUploadingFiles(true);
+        setFileMessage("Uploading files...");
+        uploadedFiles = await uploadIdeaFiles(selectedFiles, user.uid);
+        setFileMessage(uploadedFiles.length === 1 ? "File uploaded." : "Files uploaded.");
       }
 
       // Generate a SHA-256 fingerprint of the idea
@@ -107,28 +107,27 @@ export default function CaptureForm() {
       if (useLocation && location) {
         ideaData.location = location;
       }
-      if (uploadedFile) {
-        ideaData.media = [
-          {
-            storage: "supabase",
-            bucket: "ideas",
-            path: uploadedFile.path,
-            publicUrl: uploadedFile.publicUrl,
-            mimeType: selectedFile.type,
-            size: selectedFile.size,
-          },
-        ];
+      if (uploadedFiles.length > 0) {
+        ideaData.media = uploadedFiles.map((file) => ({
+          storage: "supabase",
+          bucket: "ideas",
+          path: file.path,
+          publicUrl: file.publicUrl,
+          mimeType: file.mimeType,
+          size: file.size,
+          name: file.name,
+        }));
       }
       // Save the idea to Firestore
       await addDoc(collection(db, "users", user.uid, "ideas"), ideaData);
       setContent("");
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setFileMessage("");
     } catch (error) {
       console.error("Error saving idea:", error);
       setFileMessage("File upload failed. Please try again.");
     } finally {
-      setUploadingFile(false);
+      setUploadingFiles(false);
       setSaving(false);
     }
   };
@@ -167,13 +166,22 @@ export default function CaptureForm() {
       </div>
       {locationMessage && <p className="mt-2 text-sm text-slate-500">{locationMessage}</p>}
       <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-        <label className="mb-2 block font-medium text-slate-900">Optional file</label>
+        <label className="mb-2 block font-medium text-slate-900">Optional files</label>
         <input
           type="file"
-          onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+          multiple
+          accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt,.csv,.ppt,.pptx"
+          onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
           className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800"
         />
-        {selectedFile && <p className="mt-2 text-xs text-slate-500">Selected: {selectedFile.name}</p>}
+        <p className="mt-2 text-xs text-slate-500">You can attach images, audio, video, or documents.</p>
+        {selectedFiles.length > 0 && (
+          <ul className="mt-2 list-disc pl-5 text-xs text-slate-500">
+            {selectedFiles.map((file) => (
+              <li key={`${file.name}-${file.size}`}>{file.name}</li>
+            ))}
+          </ul>
+        )}
         {fileMessage && <p className="mt-2 text-sm text-slate-500">{fileMessage}</p>}
       </div>
       <div className="mt-4 flex flex-col gap-2 text-sm text-slate-700">
@@ -205,10 +213,10 @@ export default function CaptureForm() {
       </div>
       <button
         type="submit"
-        disabled={!content.trim() || saving || uploadingFile}
+        disabled={!content.trim() || saving || uploadingFiles}
         className="mt-3 w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {saving || uploadingFile ? "Capturing..." : "Capture Idea"}
+        {saving || uploadingFiles ? "Capturing..." : "Capture Idea"}
       </button>
     </form>
   );

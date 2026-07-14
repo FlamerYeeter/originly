@@ -1,5 +1,6 @@
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import MediaPreview from "@/components/MediaPreview";
 
 export function generateStaticParams() {
   return [{ shareId: "example" }];
@@ -46,6 +47,7 @@ export default async function SharePage({ params }) {
         </div>
         <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-6">
           <p className="text-lg leading-8 text-slate-100">{idea.content}</p>
+          <MediaPreview media={idea.media} />
         </div>
         <p className="mt-6 text-sm text-slate-400">
           Shared on {idea.sharedAt?.toDate ? idea.sharedAt.toDate().toLocaleString() : "Unknown"}.

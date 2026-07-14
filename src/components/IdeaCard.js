@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, updateDoc, serverTimestamp, increment, arrayUnion, arrayRemove } from "firebase/firestore";
+import MediaPreview from "@/components/MediaPreview";
 
 export default function IdeaCard({ idea }) {
   const { user } = useAuth();
@@ -177,6 +178,7 @@ export default function IdeaCard({ idea }) {
       ) : (
         <p className="text-slate-100 mb-4 text-base leading-7">{idea.content}</p>
       )}
+      <MediaPreview media={idea.media} />
       <div className="border-t border-white/10 pt-4">
         <p className="text-xs text-slate-400">
           <span className="font-medium text-slate-200">Captured:</span> {capturedAt}
