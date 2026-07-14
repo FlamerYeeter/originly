@@ -1,6 +1,10 @@
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+export function generateStaticParams() {
+  return [{ shareId: "example" }];
+}
+
 export default async function SharePage({ params }) {
   const { shareId } = await params;
 

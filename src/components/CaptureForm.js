@@ -5,6 +5,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { generateHash } from "@/lib/hash";
+import { uploadIdeaFile } from "@/lib/supabase";
 
 export default function CaptureForm() {
   const [content, setContent] = useState("");
@@ -14,6 +15,9 @@ export default function CaptureForm() {
   const [locationFetching, setLocationFetching] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [fileMessage, setFileMessage] = useState("");
   const { user } = useAuth();
 
   const reverseGeocode = async (latitude, longitude) => {
@@ -77,7 +81,17 @@ export default function CaptureForm() {
     if (!content.trim() || saving) return;
 
     setSaving(true);
+    setFileMessage("");
     try {
+      let uploadedFile = null;
+
+      if (selectedFile) {
+        setUploadingFile(true);
+        setFileMessage("Uploading file...");
+        uploadedFile = await uploadIdeaFile(selectedFile, user.uid);
+        setFileMessage("File uploaded.");
+      }
+
       // Generate a SHA-256 fingerprint of the idea
       const hash = await generateHash(content.trim());
       const ideaData = {
@@ -93,13 +107,30 @@ export default function CaptureForm() {
       if (useLocation && location) {
         ideaData.location = location;
       }
+      if (uploadedFile) {
+        ideaData.media = [
+          {
+            storage: "supabase",
+            bucket: "ideas",
+            path: uploadedFile.path,
+            publicUrl: uploadedFile.publicUrl,
+            mimeType: selectedFile.type,
+            size: selectedFile.size,
+          },
+        ];
+      }
       // Save the idea to Firestore
       await addDoc(collection(db, "users", user.uid, "ideas"), ideaData);
       setContent("");
+      setSelectedFile(null);
+      setFileMessage("");
     } catch (error) {
       console.error("Error saving idea:", error);
+      setFileMessage("File upload failed. Please try again.");
+    } finally {
+      setUploadingFile(false);
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (
@@ -135,6 +166,16 @@ export default function CaptureForm() {
         )}
       </div>
       {locationMessage && <p className="mt-2 text-sm text-slate-500">{locationMessage}</p>}
+      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+        <label className="mb-2 block font-medium text-slate-900">Optional file</label>
+        <input
+          type="file"
+          onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+          className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800"
+        />
+        {selectedFile && <p className="mt-2 text-xs text-slate-500">Selected: {selectedFile.name}</p>}
+        {fileMessage && <p className="mt-2 text-sm text-slate-500">{fileMessage}</p>}
+      </div>
       <div className="mt-4 flex flex-col gap-2 text-sm text-slate-700">
         <label className="font-medium text-slate-900">Visibility</label>
         <div className="flex flex-wrap items-center gap-3">
@@ -164,10 +205,10 @@ export default function CaptureForm() {
       </div>
       <button
         type="submit"
-        disabled={!content.trim() || saving}
+        disabled={!content.trim() || saving || uploadingFile}
         className="mt-3 w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {saving ? "Capturing..." : "Capture Idea"}
+        {saving || uploadingFile ? "Capturing..." : "Capture Idea"}
       </button>
     </form>
   );
