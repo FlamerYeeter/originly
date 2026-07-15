@@ -16,6 +16,10 @@ export async function initiateOAuthFlow() {
   const hasNativePlugin = typeof window !== "undefined" &&
     (window.Capacitor?.Plugins?.GoogleSignIn || window.Capacitor?.GoogleSignIn);
 
+  console.debug("[authHandler] platform:", platform);
+  console.debug("[authHandler] Capacitor:", typeof window !== "undefined" ? window.Capacitor : undefined);
+  console.debug("[authHandler] Plugins:", typeof window !== "undefined" ? window.Capacitor?.Plugins : undefined);
+
   if (platform !== "web" && !hasNativePlugin) {
     throw new Error("Native GoogleSignIn plugin not found on device. Please ensure the custom Capacitor plugin is registered in MainActivity.");
   }
