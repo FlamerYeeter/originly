@@ -3,8 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { initiateOAuthFlow } from "@/lib/authHandler";
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
@@ -22,10 +21,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setSigningIn(true);
     try {
-      const provider = new GoogleAuthProvider();
-      provider.addScope("profile");
-      provider.addScope("email");
-      await signInWithPopup(auth, provider);
+      await initiateOAuthFlow();
     } catch (error) {
       console.error("Sign in error:", error);
       setSigningIn(false);

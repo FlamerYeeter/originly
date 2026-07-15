@@ -26,6 +26,15 @@ export default function AuthCallbackPage() {
       <div className="text-center">
         <p className="text-gray-600 text-lg">Signing you in...</p>
         <p className="text-sm text-gray-400 mt-2">Closing browser...</p>
+        <p className="text-sm text-gray-400 mt-4">If the browser does not close, tap the button below to return to the app.</p>
+        <div className="mt-3">
+          <a
+            href="intent://originly-two.vercel.app/auth/callback#Intent;scheme=https;package=com.example.app;end"
+            className="inline-block bg-gray-900 text-white py-2 px-4 rounded-lg"
+          >
+            Return to app
+          </a>
+        </div>
       </div>
     </div>
   );

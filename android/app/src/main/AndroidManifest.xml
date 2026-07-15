@@ -22,6 +22,26 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Deep link for OAuth callback: open app when the auth callback URL is visited -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Replace host/pathPrefix with your deployed web URL and callback path -->
+                <data android:scheme="https" android:host="originly-two.vercel.app" android:pathPrefix="/auth/callback" />
+            </intent-filter>
+
+            <!-- If Firebase redirects to your project's firebaseapp.com auth handler (common),
+                 add its host here so the system browser can return to the app.
+                 Replace YOUR_FIREBASE_AUTH_DOMAIN with e.g. my-project-4e3.firebaseapp.com
+                 and keep the pathPrefix usually '/__/auth/handler' -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="YOUR_FIREBASE_AUTH_DOMAIN" android:pathPrefix="/__/auth/handler" />
+            </intent-filter>
+
         </activity>
 
         <provider
