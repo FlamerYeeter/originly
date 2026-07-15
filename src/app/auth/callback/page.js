@@ -1,32 +1,34 @@
 "use client";
 
 import { useEffect } from "react";
-import { App } from "@capacitor/app";
 
 export default function AuthCallbackPage() {
   useEffect(() => {
-    const closeAndReturn = async () => {
+    const closeWindow = async () => {
       try {
-        // Brief delay to ensure auth state updates
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        // Signal the app that auth is complete
-        await App.exitApp();
-      } catch (error) {
-        console.error("Error closing browser:", error);
+        // Brief delay to ensure auth state persists
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        
+        // Close the browser window
         window.close();
+      } catch (error) {
+        console.error("Error closing window:", error);
+        // Fallback: try to go back
+        window.history.back();
       }
     };
 
-    closeAndReturn();
+    closeWindow();
   }, []);
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen bg-white">
       <div className="text-center">
-        <p className="text-gray-600">Signing you in...</p>
+        <p className="text-gray-600 text-lg">Signing you in...</p>
         <p className="text-sm text-gray-400 mt-2">Closing browser...</p>
       </div>
     </div>
+  );
+}
   );
 }
