@@ -10,6 +10,6 @@ public class MainActivity extends BridgeActivity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Log.d("MainActivity", "Registering GoogleSignInPlugin");
-		this.registerPlugin(GoogleSignInPlugin.class);
+		registerPlugin(GoogleSignInPlugin.class);
 	}
 }

@@ -4,10 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.example.app',
   appName: 'originly',
   webDir: 'out',
-  server: {
-    url: 'https://originly-two.vercel.app',
-    cleartext: false,
-  },
   plugins: {
     GoogleAuth: {
       scopes: ['profile', 'email'],
