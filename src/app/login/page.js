@@ -5,11 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { Capacitor } from "@capacitor/core";
-import {
-  initiateOAuthFlow,
-  setupAuthStateListener,
-} from "@/lib/authHandler";
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
@@ -27,16 +22,10 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setSigningIn(true);
     try {
-      if (Capacitor.isNativePlatform()) {
-        // On native, use Firebase redirect which works within the webview
-        await initiateOAuthFlow();
-      } else {
-        // On web, use popup
-        const provider = new GoogleAuthProvider();
-        provider.addScope("profile");
-        provider.addScope("email");
-        await signInWithPopup(auth, provider);
-      }
+      const provider = new GoogleAuthProvider();
+      provider.addScope("profile");
+      provider.addScope("email");
+      await signInWithPopup(auth, provider);
     } catch (error) {
       console.error("Sign in error:", error);
       setSigningIn(false);
