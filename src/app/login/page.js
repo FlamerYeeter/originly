@@ -2,28 +2,44 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { useEffect, useState } from "react";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { Capacitor } from "@capacitor/core";
+import {
+  initiateOAuthFlow,
+  setupAuthStateListener,
+} from "@/lib/authHandler";
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [signingIn, setSigningIn] = useState(false);
 
-  // If already signed in, redirect to dashboard
   useEffect(() => {
     if (!loading && user) {
-      router.push("/dashboard");
+      router.replace("/dashboard");
+      setSigningIn(false);
+      return;
     }
   }, [user, loading, router]);
 
-  // Trigger Google sign-in popup
   const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
+    setSigningIn(true);
     try {
-      await signInWithPopup(auth, provider);
+      if (Capacitor.isNativePlatform()) {
+        // On native, use Firebase redirect which works within the webview
+        await initiateOAuthFlow();
+      } else {
+        // On web, use popup
+        const provider = new GoogleAuthProvider();
+        provider.addScope("profile");
+        provider.addScope("email");
+        await signInWithPopup(auth, provider);
+      }
     } catch (error) {
       console.error("Sign in error:", error);
+      setSigningIn(false);
     }
   };
 
