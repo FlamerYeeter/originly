@@ -6,9 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'out',
   plugins: {
     GoogleAuth: {
+      serverClientId: '771263408031-hh0m0b1c31df7nqlk619c4pmipui0s13.apps.googleusercontent.com',
       scopes: ['profile', 'email'],
-      // Replace with your Web/Server client ID from Google Cloud console
-      serverClientId: process.env.NEXT_PUBLIC_GOOGLE_SERVER_CLIENT_ID || 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
       forceCodeForRefreshToken: false,
     },
   },
