@@ -4,21 +4,30 @@ import { auth } from "@/lib/firebase";
 
 /**
  * Initiates OAuth flow.
- * Tries the custom native GoogleSignIn Capacitor plugin first and falls back to Firebase web popup.
+ * Tries the custom native GoogleSignIn Capacitor plugin first.
+ * Only uses the Firebase web popup fallback on web.
  */
 export async function initiateOAuthFlow() {
   const provider = new GoogleAuthProvider();
   provider.addScope("profile");
   provider.addScope("email");
 
-  const nativeGoogleSignIn = typeof window !== "undefined"
-    ? Capacitor?.Plugins?.GoogleSignIn || window?.Capacitor?.Plugins?.GoogleSignIn
-    : null;
+  const platform = typeof Capacitor.getPlatform === "function" ? Capacitor.getPlatform() : "web";
+  const hasNativePlugin = typeof window !== "undefined" &&
+    (window.Capacitor?.Plugins?.GoogleSignIn || window.Capacitor?.GoogleSignIn);
 
-  if (nativeGoogleSignIn) {
+  if (platform !== "web" && !hasNativePlugin) {
+    throw new Error("Native GoogleSignIn plugin not found on device. Please ensure the custom Capacitor plugin is registered in MainActivity.");
+  }
+
+  if (hasNativePlugin) {
+    const nativeGoogleSignIn = window.Capacitor?.Plugins?.GoogleSignIn || window.Capacitor?.GoogleSignIn;
     try {
       const clientId = process.env.NEXT_PUBLIC_GOOGLE_SERVER_CLIENT_ID || null;
-      if (clientId && typeof nativeGoogleSignIn.initialize === "function") {
+      if (!clientId) {
+        throw new Error("NEXT_PUBLIC_GOOGLE_SERVER_CLIENT_ID is required for native GoogleSignIn.");
+      }
+      if (typeof nativeGoogleSignIn.initialize === "function") {
         await nativeGoogleSignIn.initialize({ clientId });
       }
 
@@ -26,26 +35,30 @@ export async function initiateOAuthFlow() {
       const idToken = result?.idToken ?? result?.authentication?.idToken;
       const accessToken = result?.accessToken ?? result?.authentication?.accessToken;
 
-      if (idToken || accessToken) {
-        const credential = GoogleAuthProvider.credential(idToken ?? null, accessToken ?? null);
-        await signInWithCredential(auth, credential);
-        return;
+      if (!idToken && !accessToken) {
+        throw new Error("Native GoogleSignIn returned no idToken or accessToken.");
       }
 
-      console.warn("Native GoogleSignIn returned no tokens; falling back to web popup.");
+      const credential = GoogleAuthProvider.credential(idToken ?? null, accessToken ?? null);
+      await signInWithCredential(auth, credential);
+      return;
     } catch (nativeErr) {
-      console.warn("Native GoogleSignIn plugin failed; falling back to web popup:", nativeErr);
+      console.error("Native GoogleSignIn failed:", nativeErr);
+      throw nativeErr;
     }
-  } else {
-    console.info("Native GoogleSignIn plugin unavailable; using web popup fallback.");
   }
 
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (webErr) {
-    console.error("Firebase web popup sign-in failed:", webErr);
-    throw webErr;
+  if (platform === "web") {
+    try {
+      await signInWithPopup(auth, provider);
+      return;
+    } catch (webErr) {
+      console.error("Firebase web popup sign-in failed:", webErr);
+      throw webErr;
+    }
   }
+
+  throw new Error("Unable to sign in: no fallback available on native platform.");
 }
 
 /**

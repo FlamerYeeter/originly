@@ -9,6 +9,8 @@ export default function LoginPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [signingIn, setSigningIn] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (!loading && user) {
@@ -20,11 +22,18 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setSigningIn(true);
+    setStatusMessage("Starting Google sign-in...");
+    setErrorMessage("");
+
     try {
       await initiateOAuthFlow();
     } catch (error) {
       console.error("Sign in error:", error);
       setSigningIn(false);
+      setStatusMessage("");
+      setErrorMessage(
+        error?.message || "Unable to sign in. Please try again or check your app configuration."
+      );
     }
   };
 
@@ -37,10 +46,19 @@ export default function LoginPage() {
         </p>
         <button
           onClick={handleGoogleSignIn}
-          className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+          disabled={signingIn}
+          className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Sign in with Google
+          {signingIn ? "Signing in..." : "Sign in with Google"}
         </button>
+
+        {statusMessage ? (
+          <p className="mt-4 text-sm text-blue-600">{statusMessage}</p>
+        ) : null}
+
+        {errorMessage ? (
+          <p className="mt-4 text-sm text-red-600 whitespace-pre-line">{errorMessage}</p>
+        ) : null}
       </div>
     </div>
   );

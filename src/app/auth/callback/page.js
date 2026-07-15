@@ -4,17 +4,21 @@ import { useEffect } from "react";
 
 export default function AuthCallbackPage() {
   useEffect(() => {
+    const intentUrl = "intent://originly-two.vercel.app/auth/callback#Intent;scheme=https;package=com.example.app;end";
+
     const closeWindow = async () => {
       try {
         // Brief delay to ensure auth state persists
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        
-        // Close the browser window
+
+        // Try to close the browser tab first.
         window.close();
+
+        // If the browser does not close, redirect back to the app via intent.
+        window.location.href = intentUrl;
       } catch (error) {
-        console.error("Error closing window:", error);
-        // Fallback: try to go back
-        window.history.back();
+        console.error("Error closing window or redirecting to app:", error);
+        window.location.href = intentUrl;
       }
     };
 
