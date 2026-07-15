@@ -31,6 +31,7 @@ public class GoogleSignInPlugin extends Plugin {
 
     @PluginMethod
     public void initialize(PluginCall call) {
+        Log.d("GoogleSignInPlugin", "initialize called");
         String clientId = call.getString("clientId");
         if (clientId == null) {
             call.reject("clientId is required");
@@ -48,7 +49,9 @@ public class GoogleSignInPlugin extends Plugin {
 
     @PluginMethod
     public void signIn(PluginCall call) {
+        Log.d("GoogleSignInPlugin", "signIn called");
         if (googleSignInClient == null) {
+            Log.d("GoogleSignInPlugin", "signIn failed: not initialized");
             call.reject("GoogleSignIn not initialized. Call initialize(clientId) first.");
             return;
         }
