@@ -73,7 +73,13 @@ export async function initiateOAuthFlow() {
     return;
   } catch (nativeErr) {
     console.error("Native GoogleSignIn failed:", nativeErr);
-    throw nativeErr;
+    try {
+      await signInWithPopup(auth, provider);
+      return;
+    } catch (webErr) {
+      console.error("Fallback web popup sign-in failed:", webErr);
+      throw nativeErr;
+    }
   }
 }
 

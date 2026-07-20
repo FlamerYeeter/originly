@@ -56,6 +56,7 @@ public class GoogleSignInPlugin extends Plugin {
             return;
         }
 
+        saveCall(call);
         pendingCall = call;
         Intent signInIntent = googleSignInClient.getSignInIntent();
         startActivityForResult(call, signInIntent, RC_SIGN_IN);
@@ -65,6 +66,10 @@ public class GoogleSignInPlugin extends Plugin {
     protected void handleOnActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.handleOnActivityResult(requestCode, resultCode, data);
         if (requestCode == RC_SIGN_IN) {
+            if (pendingCall == null) {
+                pendingCall = getSavedCall();
+            }
+            Log.d("GoogleSignInPlugin", "handleOnActivityResult called requestCode=" + requestCode + " pendingCall=" + (pendingCall != null));
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             try {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
