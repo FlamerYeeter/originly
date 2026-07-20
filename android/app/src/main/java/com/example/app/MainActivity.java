@@ -8,8 +8,8 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
 		Log.d("MainActivity", "Registering GoogleSignInPlugin");
 		registerPlugin(GoogleSignInPlugin.class);
+		super.onCreate(savedInstanceState);
 	}
 }

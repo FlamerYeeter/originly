@@ -30,13 +30,14 @@ export default function VerifyForm() {
       const snapshot = await getDocs(q);
 
       if (!snapshot.empty) {
-        // Match found - retrieve the original capture date
+        // Match found - retrieve the original capture date and title
         const matchedIdea = snapshot.docs[0].data();
         const capturedDate = matchedIdea.createdAt?.toDate
           ? matchedIdea.createdAt.toDate().toLocaleString()
           : "Unknown";
         setResult({
           match: true,
+          title: matchedIdea.title || null,
           message: `Integrity verified. This idea was captured on ${capturedDate} and has not been altered.`,
           hash: hash,
         });
@@ -79,6 +80,7 @@ export default function VerifyForm() {
               : "bg-rose-950/70 border-rose-500/20 text-rose-100"
           }`}
         >
+          {result.title && <p className="text-sm font-semibold">Title: {result.title}</p>}
           <p className="text-sm font-medium">{result.message}</p>
         </div>
       )}

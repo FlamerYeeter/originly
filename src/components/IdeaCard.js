@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, updateDoc, serverTimestamp, increment, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, setDoc, updateDoc, serverTimestamp, increment, arrayUnion, arrayRemove, collection, addDoc } from "firebase/firestore";
 import MediaPreview from "@/components/MediaPreview";
 
 export default function IdeaCard({ idea }) {
@@ -16,7 +16,11 @@ export default function IdeaCard({ idea }) {
   const [liking, setLiking] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(idea.content);
+  const [editTitle, setEditTitle] = useState(idea.title || "");
   const [editVisibility, setEditVisibility] = useState(idea.visibility || "private");
+  const [editCategory, setEditCategory] = useState(idea.category || "💡 Idea");
+  const [editTags, setEditTags] = useState((idea.tags || []).join(", "));
+  const [editTitleError, setEditTitleError] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const visibility = idea.visibility || "private";
   const isPublic = visibility === "public";
@@ -33,6 +37,10 @@ export default function IdeaCard({ idea }) {
     if (!editing) {
       setEditContent(idea.content);
       setEditVisibility(idea.visibility || "private");
+      setEditCategory(idea.category || "💡 Idea");
+      setEditTitle(idea.title || "");
+      setEditTags((idea.tags || []).join(", "));
+      setEditTitleError("");
     }
   }, [idea.likes, idea.likedBy, idea.content, idea.visibility, user, editing]);
 
@@ -42,13 +50,15 @@ export default function IdeaCard({ idea }) {
     ? idea.location.name || `${idea.location.latitude.toFixed(4)}, ${idea.location.longitude.toFixed(4)}`
     : null;
 
+  const categoryLabel = idea.category || "💡 Idea";
+
   const handleShare = async () => {
     if (!user || sharing || !isPublic) return;
     setSharing(true);
     setShareMessage("");
 
     try {
-      const shareId = idea.shareId || crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    const shareId = idea.shareId || crypto.randomUUID().replace(/-/g, "").slice(0, 12);
       const shareDoc = doc(db, "sharedIdeas", shareId);
       const ideaDoc = doc(db, "users", user.uid, "ideas", idea.id);
 
@@ -58,9 +68,12 @@ export default function IdeaCard({ idea }) {
           ownerUid: user.uid,
           ownerName: user.displayName || user.email || "Anonymous",
           ideaId: idea.id,
+          title: idea.title || null,
+          tags: idea.tags || null,
           content: idea.content,
           // explicitly store visibility so community view shows correct badge
           visibility: idea.visibility || "public",
+          category: idea.category || null,
           capturedAt: idea.createdAt || serverTimestamp(),
           sharedAt: serverTimestamp(),
           location: idea.location || null,
@@ -127,10 +140,44 @@ export default function IdeaCard({ idea }) {
     const ideaDoc = doc(db, "users", user.uid, "ideas", idea.id);
 
     try {
+      const nextVersionNumber = (idea.versionNumber ?? 1) + 1;
+      const nextVersion = `v${nextVersionNumber}`;
+      // Validate title length before saving
+      if (editTitle.trim().length > 120) {
+        setEditTitleError("Title must be 120 characters or less.");
+        setSavingEdit(false);
+        return;
+      }
+      // create a version entry before updating
+      try {
+        await addDoc(collection(db, "users", user.uid, "ideas", idea.id, "versions"), {
+          title: idea.title || null,
+          content: idea.content || null,
+          tags: idea.tags || null,
+          category: idea.category || null,
+          version: idea.version || null,
+          versionNumber: idea.versionNumber || 1,
+          createdAt: serverTimestamp(),
+        });
+      } catch (verr) {
+        console.error("Failed to write version entry:", verr);
+      }
+
+      const tagsArray = editTags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .slice(0, 20);
+
       await updateDoc(ideaDoc, {
+        title: editTitle.trim(),
         content: editContent.trim(),
         visibility: editVisibility,
+        category: editCategory,
+        tags: tagsArray,
         updatedAt: serverTimestamp(),
+        version: nextVersion,
+        versionNumber: nextVersionNumber,
       });
       setEditing(false);
     } catch (error) {
@@ -144,6 +191,18 @@ export default function IdeaCard({ idea }) {
     <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl shadow-black/20">
       {editing ? (
         <div className="space-y-4">
+          <input
+            value={editTitle}
+            onChange={(e) => {
+              const v = e.target.value;
+              setEditTitle(v);
+              setEditTitleError(v.trim().length > 120 ? "Title must be 120 characters or less." : "");
+            }}
+            placeholder="Title (optional)"
+            maxLength={120}
+            className="w-full mb-3 rounded-md border border-white/10 bg-slate-950/70 p-3 text-slate-100 outline-none"
+          />
+          {editTitleError && <p className="mt-1 text-xs text-rose-400">{editTitleError}</p>}
           <textarea
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
@@ -173,10 +232,51 @@ export default function IdeaCard({ idea }) {
               />
               Public
             </label>
+            <div className="w-full mt-2">
+              <label className="block mb-2 text-sm text-slate-300">Category</label>
+              <select
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value)}
+                className="rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-900 w-full"
+              >
+                <option>💡 Idea</option>
+                <option>🎵 Music Lyrics</option>
+                <option>🎼 Music Riff (audio)</option>
+                <option>📄 Story</option>
+                <option>🎬 Script</option>
+                <option>🎨 Artwork</option>
+                <option>📷 Image</option>
+                <option>📹 Video</option>
+                <option>📁 Document</option>
+              </select>
+            </div>
+            <div className="w-full mt-2">
+              <label className="block mb-2 text-sm text-slate-300">Tags</label>
+              <input
+                value={editTags}
+                onChange={(e) => setEditTags(e.target.value)}
+                placeholder="Tags (comma-separated)"
+                className="rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-900 w-full"
+              />
+            </div>
           </div>
         </div>
       ) : (
-        <p className="text-slate-100 mb-4 text-base leading-7">{idea.content}</p>
+        <>
+          {idea.title ? (
+            <h3 className="text-xl font-semibold text-slate-100 mb-2">{idea.title}</h3>
+          ) : null}
+            {idea.tags && idea.tags.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {idea.tags.map((t) => (
+                  <span key={t} className="text-xs bg-slate-800/60 px-2 py-1 rounded-full text-slate-200">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="text-slate-100 mb-4 text-base leading-7">{idea.content}</p>
+        </>
       )}
       <MediaPreview media={idea.media} />
       <div className="border-t border-white/10 pt-4">
@@ -192,9 +292,8 @@ export default function IdeaCard({ idea }) {
           SHA-256 hash is stored securely and hidden from the interface.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-slate-800 px-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-400">
-            {visibility}
-          </span>
+          <span className="rounded-full bg-slate-800 px-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-400">{visibility}</span>
+          <span className="rounded-full bg-slate-800 px-3 py-1 text-xs tracking-[0.02em] text-slate-200">{categoryLabel}</span>
           <button
             type="button"
             onClick={handleLike}

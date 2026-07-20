@@ -42,13 +42,22 @@ export default async function SharePage({ params }) {
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Shared idea</p>
-            <h1 className="text-3xl font-semibold">Idea preview</h1>
+            <h1 className="text-3xl font-semibold">{idea.title || "Idea preview"}</h1>
           </div>
         </div>
         <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-6">
           <p className="text-lg leading-8 text-slate-100">{idea.content}</p>
           <MediaPreview media={idea.media} />
         </div>
+        {idea.tags && idea.tags.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {idea.tags.map((t) => (
+              <span key={t} className="text-xs bg-slate-800/60 px-2 py-1 rounded-full text-slate-200">
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
         <p className="mt-6 text-sm text-slate-400">
           Shared on {idea.sharedAt?.toDate ? idea.sharedAt.toDate().toLocaleString() : "Unknown"}.
         </p>

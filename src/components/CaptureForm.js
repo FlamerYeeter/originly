@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { generateHash } from "@/lib/hash";
@@ -9,6 +9,8 @@ import { uploadIdeaFiles } from "@/lib/supabase";
 
 export default function CaptureForm() {
   const [content, setContent] = useState("");
+  const [title, setTitle] = useState("");
+  const [titleError, setTitleError] = useState("");
   const [visibility, setVisibility] = useState("private");
   const [useLocation, setUseLocation] = useState(false);
   const [location, setLocation] = useState(null);
@@ -18,6 +20,8 @@ export default function CaptureForm() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [fileMessage, setFileMessage] = useState("");
+  const [category, setCategory] = useState("Idea");
+  const [tagsInput, setTagsInput] = useState("");
   const { user } = useAuth();
 
   const reverseGeocode = async (latitude, longitude) => {
@@ -92,11 +96,26 @@ export default function CaptureForm() {
         setFileMessage(uploadedFiles.length === 1 ? "File uploaded." : "Files uploaded.");
       }
 
+      // Validate title length
+      if (title.trim().length > 120) {
+        setTitleError("Title must be 120 characters or less.");
+        setSaving(false);
+        return;
+      }
+      setTitleError("");
+
       // Generate a SHA-256 fingerprint of the idea
       const hash = await generateHash(content.trim());
       const ideaData = {
+        title: title.trim(),
         content: content.trim(),
         hash: hash,
+        category,
+        tags: tagsInput
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .slice(0, 20),
         visibility,
         ownerUid: user.uid,
         ownerName: user.displayName || user.email || "Anonymous",
@@ -119,7 +138,15 @@ export default function CaptureForm() {
         }));
       }
       // Save the idea to Firestore
-      await addDoc(collection(db, "users", user.uid, "ideas"), ideaData);
+      const docRef = await addDoc(collection(db, "users", user.uid, "ideas"), ideaData);
+      // persist origin ID and initial version metadata
+      await updateDoc(docRef, {
+        originId: docRef.id,
+        version: "v1",
+        versionNumber: 1,
+      });
+      setTitle("");
+      setTagsInput("");
       setContent("");
       setSelectedFiles([]);
       setFileMessage("");
@@ -140,6 +167,18 @@ export default function CaptureForm() {
         placeholder="What's your idea?"
         className="w-full p-4 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 min-h-[120px] text-gray-900 bg-white"
       />
+      <input
+        value={title}
+        onChange={(e) => {
+          const v = e.target.value;
+          setTitle(v);
+          setTitleError(v.trim().length > 120 ? "Title must be 120 characters or less." : "");
+        }}
+        placeholder="Title (optional)"
+        maxLength={120}
+        className="w-full mt-3 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-900 bg-white"
+      />
+      {titleError && <p className="mt-1 text-xs text-rose-400">{titleError}</p>}
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <label className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-2 text-sm text-slate-900 bg-slate-50">
           <input
@@ -185,6 +224,29 @@ export default function CaptureForm() {
         {fileMessage && <p className="mt-2 text-sm text-slate-500">{fileMessage}</p>}
       </div>
       <div className="mt-4 flex flex-col gap-2 text-sm text-slate-700">
+        <label className="font-medium text-slate-900">Category</label>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="mb-3 rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-900"
+        >
+          <option>💡 Idea</option>
+          <option>🎵 Music Lyrics</option>
+          <option>🎼 Music Riff (audio)</option>
+          <option>📄 Story</option>
+          <option>🎬 Script</option>
+          <option>🎨 Artwork</option>
+          <option>📷 Image</option>
+          <option>📹 Video</option>
+          <option>📁 Document</option>
+        </select>
+        <label className="font-medium text-slate-900">Tags</label>
+        <input
+          value={tagsInput}
+          onChange={(e) => setTagsInput(e.target.value)}
+          placeholder="Tags (comma-separated)"
+          className="mb-3 rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-900 w-full"
+        />
         <label className="font-medium text-slate-900">Visibility</label>
         <div className="flex flex-wrap items-center gap-3">
           <label className="inline-flex items-center gap-2">

@@ -44,7 +44,8 @@ export async function initiateOAuthFlow() {
   }
 
   try {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_SERVER_CLIENT_ID || null;
+    const defaultClientId = "771263408031-hh0m0b1c31df7nqlk619c4pmipui0s13.apps.googleusercontent.com";
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_SERVER_CLIENT_ID || defaultClientId;
     if (!clientId) {
       throw new Error("NEXT_PUBLIC_GOOGLE_SERVER_CLIENT_ID is required for native GoogleSignIn.");
     }
@@ -52,7 +53,14 @@ export async function initiateOAuthFlow() {
       await nativeGoogleSignIn.initialize({ clientId });
     }
 
-    const result = await nativeGoogleSignIn.signIn();
+    const signInPromise = nativeGoogleSignIn.signIn();
+    const result = await Promise.race([
+      signInPromise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Native Google sign-in timed out. Please try again.")), 25000)
+      ),
+    ]);
+
     const idToken = result?.idToken ?? result?.authentication?.idToken;
     const accessToken = result?.accessToken ?? result?.authentication?.accessToken;
 
