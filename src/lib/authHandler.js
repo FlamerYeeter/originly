@@ -29,7 +29,13 @@ export async function initiateOAuthFlow() {
   console.debug("[authHandler] imported GoogleSignIn wrapper:", GoogleSignIn);
   console.debug("[authHandler] nativeGoogleSignIn (resolved):", nativeGoogleSignIn);
 
-  if (!isNativePlatform) {
+  if (!isNativePlatform || !isPluginAvailable || !nativeGoogleSignIn) {
+    console.warn("Native GoogleSignIn plugin unavailable, falling back to web auth.", {
+      platform,
+      isNativePlatform,
+      isPluginAvailable,
+      nativeGoogleSignIn: Boolean(nativeGoogleSignIn),
+    });
     try {
       await signInWithPopup(auth, provider);
       return;
@@ -37,10 +43,6 @@ export async function initiateOAuthFlow() {
       console.error("Firebase web popup sign-in failed:", webErr);
       throw webErr;
     }
-  }
-
-  if (!nativeGoogleSignIn) {
-    throw new Error("Native GoogleSignIn plugin not found on device. Please ensure the custom Capacitor plugin is registered in MainActivity and the app is running inside Capacitor.");
   }
 
   try {

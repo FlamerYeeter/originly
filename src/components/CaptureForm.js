@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { collection, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import MediaPreview from "@/components/MediaPreview";
 import { useAuth } from "@/context/AuthContext";
 import { generateHash } from "@/lib/hash";
 import { uploadIdeaFiles } from "@/lib/supabase";
@@ -18,8 +19,18 @@ export default function CaptureForm() {
   const [locationMessage, setLocationMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [previewMedia, setPreviewMedia] = useState([]);
+  const [showCamera, setShowCamera] = useState(false);
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaStream, setMediaStream] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [fileMessage, setFileMessage] = useState("");
+  const objectUrlsRef = useRef([]);
   const [category, setCategory] = useState("Idea");
   const [tagsInput, setTagsInput] = useState("");
   const { user } = useAuth();
@@ -92,7 +103,25 @@ export default function CaptureForm() {
       if (selectedFiles.length > 0) {
         setUploadingFiles(true);
         setFileMessage("Uploading files...");
-        uploadedFiles = await uploadIdeaFiles(selectedFiles, user.uid);
+        // If selectedFiles contains already-uploaded metadata objects, filter to File instances
+        const filesToUpload = selectedFiles.filter((f) => f instanceof File);
+        if (filesToUpload.length > 0) {
+          const uploaded = await uploadIdeaFiles(filesToUpload, user.uid);
+          // replace File instances in selectedFiles with uploaded metadata
+          const updatedFiles = [];
+          let uploadIndex = 0;
+          for (const f of selectedFiles) {
+            if (f instanceof File) {
+              updatedFiles.push(uploaded[uploadIndex++] || f);
+            } else {
+              updatedFiles.push(f);
+            }
+          }
+          uploadedFiles = updatedFiles.filter((f) => f.path || f.publicUrl ? true : false);
+          setSelectedFiles(updatedFiles);
+        } else {
+          uploadedFiles = selectedFiles;
+        }
         setFileMessage(uploadedFiles.length === 1 ? "File uploaded." : "Files uploaded.");
       }
 
@@ -159,6 +188,151 @@ export default function CaptureForm() {
     }
   };
 
+  // Generate preview media for selectedFiles (object URLs for local files)
+  useEffect(() => {
+    // cleanup previous object URLs
+    objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    objectUrlsRef.current = [];
+
+    const previews = selectedFiles
+      .map((f) => {
+        if (!f) return null;
+        if (f.publicUrl) return f;
+        if (f instanceof File) {
+          const url = URL.createObjectURL(f);
+          objectUrlsRef.current.push(url);
+          return { publicUrl: url, mimeType: f.type, name: f.name };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    setPreviewMedia(previews);
+
+    return () => {
+      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      objectUrlsRef.current = [];
+    };
+  }, [selectedFiles]);
+
+  // Auto-upload any newly-captured File objects to Supabase and replace them with uploaded metadata
+  useEffect(() => {
+    let cancelled = false;
+    const uploadLocalFiles = async () => {
+      if (!user || !selectedFiles || selectedFiles.length === 0) return;
+      const filesToUpload = selectedFiles.filter((f) => f instanceof File);
+      if (filesToUpload.length === 0) return;
+      setUploadingFiles(true);
+      setFileMessage("Uploading captured media...");
+      try {
+        const uploaded = await uploadIdeaFiles(filesToUpload, user.uid);
+        if (cancelled) return;
+        // replace in order by matching name+size
+        const updated = selectedFiles.map((item) => {
+          if (item instanceof File) {
+            const matchIndex = uploaded.findIndex((u) => u.name === item.name && u.size === item.size);
+            if (matchIndex !== -1) {
+              const [m] = uploaded.splice(matchIndex, 1);
+              return m;
+            }
+            return item;
+          }
+          return item;
+        });
+        setSelectedFiles(updated);
+        setFileMessage("Captured media uploaded.");
+      } catch (err) {
+        console.error("Upload captured media failed", err);
+        setFileMessage("Failed to upload captured media.");
+      } finally {
+        setUploadingFiles(false);
+      }
+    };
+
+    uploadLocalFiles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedFiles, user]);
+
+  // --- Simple media helpers for on-the-spot captures ---
+  const stopAndCleanupStream = () => {
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((t) => t.stop());
+      setMediaStream(null);
+    }
+    setShowCamera(false);
+    setShowAudioRecorder(false);
+    setIsRecording(false);
+  };
+
+  const startCamera = async ({ forVideo = false } = {}) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: forVideo ? true : false,
+        video: { facingMode: "environment" },
+      });
+      setMediaStream(stream);
+      if (videoRef.current) videoRef.current.srcObject = stream;
+      setShowCamera(true);
+    } catch (err) {
+      console.error("Camera error", err);
+    }
+  };
+
+  const takePhoto = async () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current || document.createElement("canvas");
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.9));
+    if (blob) {
+      const file = new File([blob], `photo-${Date.now()}.jpg`, { type: blob.type });
+      setSelectedFiles((s) => [...s, file]);
+    }
+    stopAndCleanupStream();
+  };
+
+  const startRecording = ({ audioOnly = false } = {}) => {
+    if (!mediaStream) return;
+    recordedChunksRef.current = [];
+    try {
+      const options = { mimeType: audioOnly ? "audio/webm" : "video/webm;codecs=vp8,opus" };
+      const mr = new MediaRecorder(mediaStream, options);
+      mediaRecorderRef.current = mr;
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data);
+      };
+      mr.onstop = async () => {
+        const blob = new Blob(recordedChunksRef.current, { type: recordedChunksRef.current[0]?.type || (audioOnly ? "audio/webm" : "video/webm") });
+        const ext = audioOnly ? "webm" : "webm";
+        const file = new File([blob], `${audioOnly ? "audio" : "video"}-${Date.now()}.${ext}`, { type: blob.type });
+        setSelectedFiles((s) => [...s, file]);
+        stopAndCleanupStream();
+      };
+      mr.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("MediaRecorder error", err);
+    }
+  };
+
+  const stopRecording = () => {
+    const mr = mediaRecorderRef.current;
+    if (mr && mr.state !== "inactive") mr.stop();
+    setIsRecording(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (mediaStream) mediaStream.getTracks().forEach((t) => t.stop());
+    };
+  }, [mediaStream]);
+
   return (
     <form onSubmit={handleSubmit} className="w-full">
       <textarea
@@ -204,6 +378,121 @@ export default function CaptureForm() {
         )}
       </div>
       {locationMessage && <p className="mt-2 text-sm text-slate-500">{locationMessage}</p>}
+      <div className="mt-4 space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              startCamera({ forVideo: false });
+              setShowAudioRecorder(false);
+            }}
+            className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-900 bg-white hover:bg-slate-50"
+          >
+            Take Photo
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              await startCamera({ forVideo: true });
+              setShowAudioRecorder(false);
+            }}
+            className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-900 bg-white hover:bg-slate-50"
+          >
+            Record Video
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                setMediaStream(stream);
+                setShowAudioRecorder(true);
+                setShowCamera(false);
+              } catch (err) {
+                console.error(err);
+              }
+            }}
+            className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-900 bg-white hover:bg-slate-50"
+          >
+            Record Audio
+          </button>
+        </div>
+
+        {showCamera && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="mb-2 text-sm font-medium text-slate-900">Camera</div>
+            <video ref={videoRef} autoPlay playsInline muted className="w-full rounded-md bg-black" />
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={takePhoto}
+                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+              >
+                Take Photo
+              </button>
+              {!isRecording ? (
+                <button
+                  type="button"
+                  onClick={() => startRecording({ audioOnly: false })}
+                  className="rounded-full bg-rose-500 px-4 py-2 text-sm font-medium text-white hover:bg-rose-600"
+                >
+                  Start Video
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
+                >
+                  Stop
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={stopAndCleanupStream}
+                className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-900 bg-white hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+        )}
+
+        {showAudioRecorder && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="mb-2 text-sm font-medium text-slate-900">Audio Recorder</div>
+            <div className="flex gap-2">
+              {!isRecording ? (
+                <button
+                  type="button"
+                  onClick={() => startRecording({ audioOnly: true })}
+                  className="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                >
+                  Start Recording
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
+                >
+                  Stop
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={stopAndCleanupStream}
+                className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-900 bg-white hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        </div>
+
       <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
         <label className="mb-2 block font-medium text-slate-900">Optional files</label>
         <input
@@ -222,6 +511,7 @@ export default function CaptureForm() {
           </ul>
         )}
         {fileMessage && <p className="mt-2 text-sm text-slate-500">{fileMessage}</p>}
+        <MediaPreview media={previewMedia} />
       </div>
       <div className="mt-4 flex flex-col gap-2 text-sm text-slate-700">
         <label className="font-medium text-slate-900">Category</label>
