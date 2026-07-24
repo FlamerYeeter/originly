@@ -3,15 +3,15 @@ package com.example.app;
 import android.content.Intent;
 import android.util.Log;
 
+import androidx.activity.result.ActivityResult;
 import androidx.annotation.Nullable;
 
 import com.getcapacitor.Bridge;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.getcapacitor.annotation.Permission;
-import com.getcapacitor.annotation.PermissionCallback;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -56,43 +56,45 @@ public class GoogleSignInPlugin extends Plugin {
             return;
         }
 
-        saveCall(call);
         pendingCall = call;
         Intent signInIntent = googleSignInClient.getSignInIntent();
-        startActivityForResult(call, signInIntent, RC_SIGN_IN);
+        startActivityForResult(call, signInIntent, "handleSignInResult");
     }
 
-    @Override
-    protected void handleOnActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.handleOnActivityResult(requestCode, resultCode, data);
-        if (requestCode == RC_SIGN_IN) {
-            if (pendingCall == null) {
-                pendingCall = getSavedCall();
+    @ActivityCallback
+    private void handleSignInResult(PluginCall call, ActivityResult result) {
+        if (result == null || result.getData() == null) {
+            if (pendingCall != null) {
+                pendingCall.reject("Sign-in failed: no data returned");
+                pendingCall = null;
             }
-            Log.d("GoogleSignInPlugin", "handleOnActivityResult called requestCode=" + requestCode + " pendingCall=" + (pendingCall != null));
-            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
-            try {
-                GoogleSignInAccount account = task.getResult(ApiException.class);
-                if (account != null) {
-                    com.getcapacitor.JSObject js = new com.getcapacitor.JSObject();
-                    js.put("idToken", account.getIdToken());
-                    js.put("email", account.getEmail());
-                    js.put("displayName", account.getDisplayName());
-                    if (pendingCall != null) {
-                        pendingCall.resolve(js);
-                        pendingCall = null;
-                    }
-                } else {
-                    if (pendingCall != null) {
-                        pendingCall.reject("Sign-in failed: no account");
-                        pendingCall = null;
-                    }
-                }
-            } catch (ApiException e) {
+            return;
+        }
+
+        Intent data = result.getData();
+        Log.d("GoogleSignInPlugin", "handleSignInResult called result=" + result.getResultCode() + " pendingCall=" + (pendingCall != null));
+        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+        try {
+            GoogleSignInAccount account = task.getResult(ApiException.class);
+            if (account != null) {
+                com.getcapacitor.JSObject js = new com.getcapacitor.JSObject();
+                js.put("idToken", account.getIdToken());
+                js.put("email", account.getEmail());
+                js.put("displayName", account.getDisplayName());
                 if (pendingCall != null) {
-                    pendingCall.reject("Sign-in failed: " + e.getMessage());
+                    pendingCall.resolve(js);
                     pendingCall = null;
                 }
+            } else {
+                if (pendingCall != null) {
+                    pendingCall.reject("Sign-in failed: no account");
+                    pendingCall = null;
+                }
+            }
+        } catch (ApiException e) {
+            if (pendingCall != null) {
+                pendingCall.reject("Sign-in failed: " + e.getMessage());
+                pendingCall = null;
             }
         }
     }
