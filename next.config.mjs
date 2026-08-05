@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  output: 'standalone',
+  adapterPath: undefined,
   trailingSlash: true,
   images: {
     unoptimized: true,
