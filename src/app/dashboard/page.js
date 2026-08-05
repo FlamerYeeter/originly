@@ -9,6 +9,7 @@ import { signOut } from "firebase/auth";
 import { db, auth } from "@/lib/firebase";
 import CaptureForm from "@/components/CaptureForm";
 import IdeaCard from "@/components/IdeaCard";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 import VerifyForm from "@/components/VerifyForm";
 
 export default function DashboardPage() {
@@ -56,27 +57,34 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen pb-8 bg-slate-950 text-slate-100">
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/95 backdrop-blur-xl px-4 py-4">
+    <div className="min-h-screen pb-8 bg-background text-foreground">
+      <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur-xl px-4 py-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Secure idea vault</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-muted">Secure idea vault</p>
             <h1 className="text-2xl font-semibold tracking-tight">Originly</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ThemeSwitcher />
             <div className="text-right">
-              <p className="text-sm text-slate-300">{user.displayName || user.email}</p>
-              <p className="text-xs text-slate-500">Logged in</p>
+              <p className="text-sm text-muted">{user.displayName || user.email}</p>
+              <p className="text-xs text-muted">Logged in</p>
             </div>
             <Link
+              href="/help"
+              className="btn-app"
+            >
+              Help
+            </Link>
+            <Link
               href="/community"
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 transition hover:bg-white/10"
+              className="btn-app"
             >
               Community
             </Link>
             <button
               onClick={handleSignOut}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 transition hover:bg-white/10"
+              className="btn-app"
             >
               Sign out
             </button>
@@ -85,12 +93,12 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 pt-6 space-y-6">
-        <div className="glass-card overflow-hidden rounded-[2rem] border-white/10 p-6">
+        <div className="glass-card overflow-hidden rounded-[2rem] border-border p-6 text-foreground bg-surface">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div>
               <h2 className="text-xl font-semibold">Capture ideas</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Keep the black-and-white theme while giving the dashboard a cleaner, modern look.
+              <p className="mt-1 text-sm text-muted">
+                Capture or verify ideas fast and keep your idea vault up to date.
               </p>
             </div>
             <div className="flex gap-2">
@@ -120,16 +128,16 @@ export default function DashboardPage() {
           <section>{activeTab === "capture" ? <CaptureForm /> : <VerifyForm />}</section>
         </div>
 
-        <section className="glass-card rounded-[2rem] border-white/10 p-6">
+        <section className="glass-card rounded-[2rem] border-border bg-surface p-6">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Your Vault</p>
+              <p className="text-sm uppercase tracking-[0.25em] text-muted">Your Vault</p>
               <h2 className="text-2xl font-semibold">{ideas.length} idea{ideas.length === 1 ? "" : "s"}</h2>
             </div>
           </div>
           <div className="space-y-4">
             {ideas.length === 0 ? (
-              <p className="text-slate-400 text-center py-10">
+              <p className="text-muted text-center py-10">
                 No ideas yet. Capture your first one above.
               </p>
             ) : (

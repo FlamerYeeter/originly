@@ -62,12 +62,12 @@ export default function VerifyForm() {
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="Paste text to verify its integrity..."
-        className="w-full p-4 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 min-h-[120px] text-gray-900 bg-white"
+        className="w-full p-4 border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/60 min-h-[120px] text-foreground bg-surface"
       />
       <button
         type="submit"
         disabled={!content.trim() || checking}
-        className="mt-3 w-full bg-gray-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mt-3 w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {checking ? "Checking..." : "Check Integrity"}
       </button>
