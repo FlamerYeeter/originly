@@ -75,7 +75,7 @@ export default function CommunityPage() {
           ) : (
             <div className="space-y-4">
               {ideas.map((idea) => (
-                <IdeaCard key={idea.id} idea={idea} />
+                <IdeaCard key={idea.id} idea={idea} allowEdit={false} />
               ))}
             </div>
           )}

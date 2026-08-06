@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase";
 import { doc, setDoc, updateDoc, serverTimestamp, increment, arrayUnion, arrayRemove, collection, addDoc } from "firebase/firestore";
 import MediaPreview from "@/components/MediaPreview";
 
-export default function IdeaCard({ idea }) {
+export default function IdeaCard({ idea, allowEdit = true }) {
   const { user } = useAuth();
   const [sharing, setSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
@@ -332,13 +332,15 @@ export default function IdeaCard({ idea }) {
             </>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={startEditing}
-                className="rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-slate-800 bg-white hover:bg-gray-50"
-              >
-                Edit
-              </button>
+              {allowEdit && user && user.uid === idea.ownerUid && (
+                <button
+                  type="button"
+                  onClick={startEditing}
+                  className="rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-slate-800 bg-white hover:bg-gray-50"
+                >
+                  Edit
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleShare}
