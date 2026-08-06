@@ -58,35 +58,32 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen pb-8 bg-background text-foreground">
-      <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur-xl px-4 py-4">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur-xl">
+        <div className="container-max flex items-center justify-between gap-4 px-4 py-3">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-muted">Secure idea vault</p>
-            <h1 className="text-2xl font-semibold tracking-tight">Originly</h1>
+            <h1 className="text-lg sm:text-2xl font-semibold tracking-tight">Originly</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <ThemeSwitcher />
-            <div className="text-right">
+            <div className="text-right hidden sm:block">
               <p className="text-sm text-muted">{user.displayName || user.email}</p>
               <p className="text-xs text-muted">Logged in</p>
             </div>
-            <Link
-              href="/help"
-              className="btn-app"
-            >
+            <Link href="/help" className="btn-app">
               Help
             </Link>
-            <Link
-              href="/community"
-              className="btn-app"
-            >
+            <Link href="/community" className="btn-app">
               Community
             </Link>
-            <button
-              onClick={handleSignOut}
-              className="btn-app"
-            >
+            <button onClick={handleSignOut} className="btn-app hidden sm:inline-flex">
               Sign out
+            </button>
+            <button onClick={handleSignOut} className="btn-app inline-flex sm:hidden p-2" aria-label="Sign out">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path d="M16 13v-2H7V8l-5 4 5 4v-3h9z" />
+                <path d="M20 3h-8v2h8v14h-8v2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" />
+              </svg>
             </button>
           </div>
         </div>
