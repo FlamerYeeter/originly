@@ -108,7 +108,7 @@ export default function PublicVerifyForm() {
               </div>
             )}
             <div className="mt-4">
-              <Link href={`/record/${result.id}`} className="text-sm text-slate-100 underline">
+              <Link href={`/record?id=${result.id}`} className="text-sm text-slate-100 underline">
                 View public record details
               </Link>
             </div>
