@@ -38,6 +38,7 @@ export default function CaptureForm() {
   const objectUrlsRef = useRef([]);
   const [category, setCategory] = useState("Idea");
   const [tagsInput, setTagsInput] = useState("");
+  const [facingMode, setFacingMode] = useState("environment"); // "environment" (back) or "user" (front)
   const { user } = useAuth();
   const formRef = useRef(null);
 
@@ -290,13 +291,60 @@ export default function CaptureForm() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: forVideo ? true : false,
-        video: { facingMode: "environment" },
+        video: { facingMode: { ideal: facingMode } },
       });
       setMediaStream(stream);
       setShowAudioRecorder(false);
       setShowCamera(true);
     } catch (err) {
       console.error("Camera error", err);
+      // Fallback: try without facingMode constraint
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: forVideo ? true : false,
+          video: true,
+        });
+        setMediaStream(stream);
+        setShowAudioRecorder(false);
+        setShowCamera(true);
+      } catch (fallbackErr) {
+        console.error("Camera fallback error", fallbackErr);
+      }
+    }
+  };
+
+  const switchCamera = async () => {
+    if (!mediaStream) return;
+    // Stop the current stream
+    mediaStream.getTracks().forEach((t) => t.stop());
+    // Toggle facing mode
+    const newFacingMode = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(newFacingMode);
+    // Restart with new facing mode
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: isRecording ? true : false,
+        video: { facingMode: { ideal: newFacingMode } },
+      });
+      setMediaStream(stream);
+    } catch (err) {
+      console.error("Camera switch error", err);
+      // Fallback: restart with original facing mode (ideal constraint)
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: isRecording ? true : false,
+          video: { facingMode: { ideal: facingMode } },
+        });
+        setMediaStream(stream);
+      } catch (fallbackErr) {
+        console.error("Camera fallback switch error", fallbackErr);
+        // Last resort: just get any camera
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: isRecording ? true : false,
+          video: true,
+        });
+        setMediaStream(stream);
+      }
     }
   };
 
@@ -363,7 +411,7 @@ export default function CaptureForm() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: { facingMode: "environment" },
+        video: { facingMode: { ideal: facingMode } },
       });
       setMediaStream(stream);
       setShowAudioRecorder(false);
@@ -371,7 +419,20 @@ export default function CaptureForm() {
       return stream;
     } catch (err) {
       console.error("Video capture error", err);
-      return null;
+      // Fallback: try without facingMode constraint
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: true,
+        });
+        setMediaStream(stream);
+        setShowAudioRecorder(false);
+        setShowCamera(true);
+        return stream;
+      } catch (fallbackErr) {
+        console.error("Video capture fallback error", fallbackErr);
+        return null;
+      }
     }
   };
 
@@ -419,11 +480,9 @@ export default function CaptureForm() {
         mr.start();
         setIsRecording(true);
       } else {
-        // Composite video frames to a canvas so we can draw a watermark on each frame
-        // Ensure the video element exists and has metadata before sizing canvas
+        // Try canvas-based recording with watermark, fallback to direct stream recording on mobile
         let video = videoRef.current;
         if (!video) {
-          // wait up to ~2s for the video element to mount
           await new Promise((resolve) => {
             let elapsed = 0;
             const check = () => {
@@ -449,7 +508,6 @@ export default function CaptureForm() {
               resolve();
             };
             vid.addEventListener("loadedmetadata", onLoaded);
-            // fallback resolve after 1.5s
             setTimeout(() => {
               try {
                 vid.removeEventListener("loadedmetadata", onLoaded);
@@ -460,45 +518,75 @@ export default function CaptureForm() {
 
         await waitForMetadata(video);
 
-        const canvas = recordingCanvasRef.current || document.createElement("canvas");
-        canvas.width = (video && video.videoWidth) || 1280;
-        canvas.height = (video && video.videoHeight) || 720;
-        recordingCanvasRef.current = canvas;
-        const ctx = canvas.getContext("2d");
+        // Try canvas-based recording with watermark first (for desktop)
+        let useCanvasCapture = true;
+        let composedStream = null;
 
-        const drawFrame = () => {
-          try {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            if (watermarkEnabled && watermarkText) {
-              const fontSize = Math.max(16, Math.round(canvas.width / 40));
-              ctx.font = `${fontSize}px sans-serif`;
-              ctx.textBaseline = "bottom";
-              const text = watermarkText;
-              const padding = Math.round(fontSize * 0.6);
-              const textWidth = ctx.measureText(text).width;
-              const x = canvas.width - textWidth - padding;
-              const y = canvas.height - padding;
-              ctx.fillStyle = "rgba(0,0,0,0.45)";
-              ctx.fillText(text, x + 2, y + 2);
-              ctx.fillStyle = "rgba(255,255,255,0.9)";
-              ctx.fillText(text, x, y);
+        try {
+          const canvas = recordingCanvasRef.current || document.createElement("canvas");
+          canvas.width = (video && video.videoWidth) || 1280;
+          canvas.height = (video && video.videoHeight) || 720;
+          recordingCanvasRef.current = canvas;
+          const ctx = canvas.getContext("2d");
+
+          const drawFrame = () => {
+            try {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              if (watermarkEnabled && watermarkText) {
+                const fontSize = Math.max(16, Math.round(canvas.width / 40));
+                ctx.font = `${fontSize}px sans-serif`;
+                ctx.textBaseline = "bottom";
+                const text = watermarkText;
+                const padding = Math.round(fontSize * 0.6);
+                const textWidth = ctx.measureText(text).width;
+                const x = canvas.width - textWidth - padding;
+                const y = canvas.height - padding;
+                ctx.fillStyle = "rgba(0,0,0,0.45)";
+                ctx.fillText(text, x + 2, y + 2);
+                ctx.fillStyle = "rgba(255,255,255,0.9)";
+                ctx.fillText(text, x, y);
+              }
+            } catch (err) {
+              // ignore drawing errors
             }
-          } catch (err) {
-            // ignore drawing errors
+            recordingAnimationRef.current = requestAnimationFrame(drawFrame);
+          };
+
+          drawFrame();
+
+          const canvasStream = canvas.captureStream(30);
+          if (stream && stream.getAudioTracks && stream.getAudioTracks().length > 0) {
+            composedStream = new MediaStream([...canvasStream.getVideoTracks(), ...stream.getAudioTracks()]);
+          } else {
+            composedStream = canvasStream;
           }
-          recordingAnimationRef.current = requestAnimationFrame(drawFrame);
-        };
-
-        drawFrame();
-
-        const canvasStream = canvas.captureStream(30);
-        // combine audio tracks, if present
-        let composedStream = canvasStream;
-        if (stream && stream.getAudioTracks && stream.getAudioTracks().length > 0) {
-          composedStream = new MediaStream([...canvasStream.getVideoTracks(), ...stream.getAudioTracks()]);
+        } catch (err) {
+          // Canvas capture failed, use direct stream (mobile fallback)
+          useCanvasCapture = false;
+          composedStream = stream;
+          if (recordingAnimationRef.current) {
+            cancelAnimationFrame(recordingAnimationRef.current);
+            recordingAnimationRef.current = null;
+          }
         }
 
-        const options = { mimeType: "video/webm;codecs=vp8,opus" };
+        // Try multiple mime types for better mobile/browser compatibility
+        const mimeTypes = [
+          "video/webm;codecs=vp8,opus",
+          "video/webm;codecs=h264,opus",
+          "video/webm;codecs=vp9,opus",
+          "video/webm",
+          "video/mp4",
+        ];
+        let selectedMimeType = mimeTypes[0];
+        for (const mime of mimeTypes) {
+          if (MediaRecorder.isTypeSupported(mime)) {
+            selectedMimeType = mime;
+            break;
+          }
+        }
+
+        const options = { mimeType: selectedMimeType };
         const mr = new MediaRecorder(composedStream, options);
         mediaRecorderRef.current = mr;
         mr.ondataavailable = (e) => {
@@ -624,9 +712,19 @@ export default function CaptureForm() {
 
         {showCamera && (
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div className="mb-2 text-sm font-medium text-slate-900">Camera</div>
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-sm font-medium text-slate-900">Camera</div>
+              <button
+                type="button"
+                onClick={switchCamera}
+                className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-900 hover:bg-slate-300"
+                title={facingMode === "environment" ? "Switch to front camera" : "Switch to back camera"}
+              >
+                📷 {facingMode === "environment" ? "Front" : "Back"}
+              </button>
+            </div>
             <video ref={videoRef} autoPlay playsInline muted className="w-full rounded-md bg-black" />
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={takePhoto}
