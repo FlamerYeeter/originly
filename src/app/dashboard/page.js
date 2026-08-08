@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,6 +12,7 @@ import CaptureForm from "@/components/CaptureForm";
 import IdeaCard from "@/components/IdeaCard";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import VerifyForm from "@/components/VerifyForm";
+import StoryReelsStrip from "@/components/StoryReelsStrip";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -60,9 +62,12 @@ export default function DashboardPage() {
     <div className="min-h-screen pb-8 bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur-xl">
         <div className="container-max flex items-center justify-between gap-4 px-4 py-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-muted">Secure idea vault</p>
-            <h1 className="text-lg sm:text-2xl font-semibold tracking-tight">Originly</h1>
+          <div className="flex items-center gap-3">
+            <Image src="/OriginlyLogo.png" alt="Originly logo" width={36} height={36} />
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-muted">Secure idea vault</p>
+              <h1 className="text-lg sm:text-2xl font-semibold tracking-tight">Originly</h1>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <ThemeSwitcher />
@@ -90,6 +95,18 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 pt-6 space-y-6">
+        <StoryReelsStrip
+          items={ideas.slice(0, 8).map((idea) => ({
+            id: idea.id,
+            ownerName: idea.ownerName || "You",
+            title: idea.title || "Idea story",
+            description: idea.description || "Your saved idea",
+            thumb: idea.media?.[0]?.publicUrl || "/OriginlyLogo.png",
+          }))}
+          title="Latest Reels"
+          subtitle="Swipe and tap through your recent ideas."
+        />
+
         <div className="glass-card overflow-hidden rounded-[2rem] border-border p-6 text-foreground bg-surface">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div>

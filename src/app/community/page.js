@@ -5,6 +5,7 @@ import { collection, query, where, orderBy, onSnapshot } from "firebase/firestor
 import { db } from "@/lib/firebase";
 import IdeaCard from "@/components/IdeaCard";
 import ReelsFeed from "@/components/ReelsFeed";
+import StoryReelsStrip from "@/components/StoryReelsStrip";
 
 export default function CommunityPage() {
   const [ideas, setIdeas] = useState([]);
@@ -40,6 +41,24 @@ export default function CommunityPage() {
   return (
     <div className="min-h-screen bg-transparent text-slate-900 pb-10">
       <main className="container-max pt-6">
+        <StoryReelsStrip
+          items={(ideas && ideas.length > 0 ? ideas.slice(0, 12).map((item) => ({
+            id: item.id,
+            ownerName: item.ownerName || 'User',
+            title: item.title || 'Public idea',
+            description: item.description || 'Publicly shared idea',
+            thumb: (item.media && item.media[0]?.publicUrl) || '/OriginlyLogo.png',
+          })) : Array.from({ length: 6 }).map((_, i) => ({
+            id: `ph-${i}`,
+            ownerName: 'User',
+            title: 'Placeholder story',
+            description: 'This preview will be replaced by real community posts.',
+            thumb: '/OriginlyLogo.png',
+          })))}
+          title="Latest Reels"
+          subtitle="Swipe through recent public ideas shared by the community."
+        />
+
         <div className="mb-8 flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/20">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Community feed</p>

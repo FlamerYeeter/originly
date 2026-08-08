@@ -545,7 +545,7 @@ export default function CaptureForm() {
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="What's your idea?"
-        className="w-full p-4 border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/60 min-h-[120px] text-foreground bg-surface"
+        className="w-full p-4 border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/60 min-h-[80px] sm:min-h-[120px] text-foreground bg-surface"
       />
       <input
         value={title}

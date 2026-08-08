@@ -238,6 +238,55 @@ html, body {
   transform: none;
 }
 
+/* Keep bottom bar visible and above content */
+.mobile-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+}
+
+/* Reduce glass-card padding on small screens to save space */
+.glass-card {
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .glass-card {
+    padding: 1.5rem; /* keep slightly larger on tablet+ */
+  }
+}
+
+/* Stories / reels strip (horizontal) */
+.stories-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 4px 12px 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.stories-item {
+  flex: 0 0 auto;
+  width: 72px;
+  text-align: center;
+}
+.stories-item img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+}
+.stories-item .stories-label {
+  font-size: 12px;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+/* Ensure main content doesn't get hidden behind bottom bar */
+main { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); }
+
 .safe-area {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
 }
