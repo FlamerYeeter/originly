@@ -23,6 +23,11 @@ export default function SharePage() {
       return;
     }
 
+    // Wait for auth to finish loading before trying to fetch user data
+    if (authLoading) {
+      return;
+    }
+
     const loadIdea = async () => {
       try {
         // First try to load from sharedIdeas (for publicly shared links)
@@ -62,7 +67,7 @@ export default function SharePage() {
     };
 
     loadIdea();
-  }, [shareId, user]);
+  }, [shareId, user, authLoading]);
 
   if (loading) {
     return (
