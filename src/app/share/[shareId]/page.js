@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
@@ -9,9 +9,9 @@ import MediaPreview from "@/components/MediaPreview";
 import Link from "next/link";
 
 export default function SharePage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const shareId = params?.shareId;
+  const shareId = searchParams.get("id");
   const [idea, setIdea] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

@@ -116,7 +116,7 @@ export default function StoryReelsStrip({
             </div>
             <button
               type="button"
-              onClick={() => window.location.href = `/share/${activeStory.id}`}
+              onClick={() => window.location.href = `/share?id=${activeStory.id}`}
               className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
             >
               Tap to focus
