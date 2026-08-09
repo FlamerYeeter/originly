@@ -17,7 +17,10 @@ export default function SharePage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    console.log("Share page: Initial state - shareId:", shareId, "authLoading:", authLoading);
+    
     if (!shareId) {
+      console.log("Share page: No shareId found");
       setError("No share ID found");
       setLoading(false);
       return;
@@ -25,16 +28,22 @@ export default function SharePage() {
 
     // Wait for auth to finish loading before trying to fetch user data
     if (authLoading) {
+      console.log("Share page: Auth still loading, waiting...");
       return;
     }
+
+    console.log("Share page: Auth ready, attempting to load idea for shareId:", shareId, "user:", user?.uid);
 
     const loadIdea = async () => {
       try {
         // First try to load from sharedIdeas (for publicly shared links)
         const shareRef = doc(db, "sharedIdeas", shareId);
         const snapshot = await getDoc(shareRef);
+        
+        console.log("Share page: Checked sharedIdeas, found:", snapshot.exists());
 
         if (snapshot.exists()) {
+          console.log("Share page: Loaded from sharedIdeas");
           setIdea(snapshot.data());
           setError(null);
           setLoading(false);
@@ -43,10 +52,14 @@ export default function SharePage() {
 
         // If not in sharedIdeas and user is logged in, try their vault
         if (user) {
+          console.log("Share page: Checking user vault for idea");
           const userDocRef = doc(db, "users", user.uid, "ideas", shareId);
           const userSnap = await getDoc(userDocRef);
           
+          console.log("Share page: Checked user vault, found:", userSnap.exists());
+
           if (userSnap.exists()) {
+            console.log("Share page: Loaded from user vault");
             setIdea(userSnap.data());
             setError(null);
             setLoading(false);
@@ -55,10 +68,11 @@ export default function SharePage() {
         }
 
         // Not found in either location
+        console.log("Share page: Idea not found in any location");
         setError("Share link not found");
         setIdea(null);
       } catch (err) {
-        console.error("Error loading share:", err);
+        console.error("Share page: Error loading share:", err);
         setError("Failed to load share link");
         setIdea(null);
       } finally {
