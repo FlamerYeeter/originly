@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function StoryReelsStrip({
   items = [],
@@ -12,7 +11,6 @@ export default function StoryReelsStrip({
 }) {
   const [activeStory, setActiveStory] = useState(items[0] ?? null);
   const stripRef = useRef(null);
-  const router = useRouter();
 
   const stories = useMemo(() => {
     const baseItems = Array.isArray(items) ? items : [];
@@ -118,7 +116,7 @@ export default function StoryReelsStrip({
             </div>
             <button
               type="button"
-              onClick={() => router.push(`/share/${activeStory.id}`)}
+              onClick={() => window.location.href = `/share/${activeStory.id}`}
               className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
             >
               Tap to focus
