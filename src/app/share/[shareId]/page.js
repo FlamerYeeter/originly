@@ -1,40 +1,92 @@
+'use client';
+
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 import MediaPreview from "@/components/MediaPreview";
+import Link from "next/link";
 
-export function generateStaticParams() {
-  return [{ shareId: "example" }];
-}
+export default function SharePage() {
+  const params = useParams();
+  const { user, loading: authLoading } = useAuth();
+  const shareId = params?.shareId;
+  const [idea, setIdea] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-export default async function SharePage({ params }) {
-  const { shareId } = await params;
+  useEffect(() => {
+    if (!shareId) {
+      setError("No share ID found");
+      setLoading(false);
+      return;
+    }
 
-  if (!shareId) {
+    const loadIdea = async () => {
+      try {
+        // First try to load from sharedIdeas (for publicly shared links)
+        const shareRef = doc(db, "sharedIdeas", shareId);
+        const snapshot = await getDoc(shareRef);
+
+        if (snapshot.exists()) {
+          setIdea(snapshot.data());
+          setError(null);
+          setLoading(false);
+          return;
+        }
+
+        // If not in sharedIdeas and user is logged in, try their vault
+        if (user) {
+          const userDocRef = doc(db, "users", user.uid, "ideas", shareId);
+          const userSnap = await getDoc(userDocRef);
+          
+          if (userSnap.exists()) {
+            setIdea(userSnap.data());
+            setError(null);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Not found in either location
+        setError("Share link not found");
+        setIdea(null);
+      } catch (err) {
+        console.error("Error loading share:", err);
+        setError("Failed to load share link");
+        setIdea(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadIdea();
+  }, [shareId, user]);
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4">
         <div className="max-w-xl rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-black/20">
-          <h1 className="text-2xl font-semibold mb-4">No share ID found</h1>
-          <p className="text-slate-400">Please use a valid share link with an ID.</p>
+          <h1 className="text-2xl font-semibold mb-4">Loading...</h1>
         </div>
       </div>
     );
   }
 
-  const shareRef = doc(db, "sharedIdeas", shareId);
-  const snapshot = await getDoc(shareRef);
-
-  if (!snapshot.exists()) {
+  if (error || !idea) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4">
         <div className="max-w-xl rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-black/20">
-          <h1 className="text-2xl font-semibold mb-4">Share link not found</h1>
+          <h1 className="text-2xl font-semibold mb-4">{error || "Share link not found"}</h1>
           <p className="text-slate-400">This share link is invalid or the idea has been removed.</p>
+          <Link href="/dashboard" className="mt-4 inline-block text-sm text-slate-300 underline">
+            Back to dashboard
+          </Link>
         </div>
       </div>
     );
   }
-
-  const idea = snapshot.data();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4 py-12">

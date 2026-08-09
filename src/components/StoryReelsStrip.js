@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function StoryReelsStrip({
   items = [],
@@ -11,6 +12,7 @@ export default function StoryReelsStrip({
 }) {
   const [activeStory, setActiveStory] = useState(items[0] ?? null);
   const stripRef = useRef(null);
+  const router = useRouter();
 
   const stories = useMemo(() => {
     const baseItems = Array.isArray(items) ? items : [];
@@ -114,7 +116,13 @@ export default function StoryReelsStrip({
               <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Selected story</p>
               <h3 className="text-lg font-semibold text-slate-900">{activeStory.title || "Story preview"}</h3>
             </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Tap to focus</span>
+            <button
+              type="button"
+              onClick={() => router.push(`/share/${activeStory.id}`)}
+              className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+            >
+              Tap to focus
+            </button>
           </div>
           {activeStory.description ? (
             <p className="mt-2 text-sm text-slate-600">{activeStory.description}</p>
