@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function StoryReelsStrip({
   items = [],
@@ -9,8 +9,10 @@ export default function StoryReelsStrip({
   emptyLabel = "No stories yet",
   onSelect,
 }) {
-  const [activeStory, setActiveStory] = useState(items[0] ?? null);
   const stripRef = useRef(null);
+  const [activeStory, setActiveStory] = useState(() => {
+    return Array.isArray(items) && items.length > 0 ? items[0] : null;
+  });
 
   const stories = useMemo(() => {
     const baseItems = Array.isArray(items) ? items : [];
@@ -21,10 +23,30 @@ export default function StoryReelsStrip({
             id: "empty",
             ownerName: "No stories",
             title: emptyLabel,
+            description: "No stories available right now.",
             thumb: "/OriginlyLogo.png",
           },
         ];
   }, [items, emptyLabel]);
+
+  useEffect(() => {
+    if (!Array.isArray(items) || items.length === 0) {
+      setActiveStory(null);
+      return;
+    }
+
+    const currentId = activeStory?.id;
+    const matchingStory = currentId ? stories.find((story) => story.id === currentId) : null;
+
+    if (matchingStory) {
+      if (matchingStory !== activeStory) {
+        setActiveStory(matchingStory);
+      }
+      return;
+    }
+
+    setActiveStory(stories[0]);
+  }, [items, stories, activeStory]);
 
   const selectStory = (story) => {
     setActiveStory(story);
@@ -109,26 +131,23 @@ export default function StoryReelsStrip({
 
       {activeStory && (
         <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-white/90 p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Selected story</p>
               <h3 className="text-lg font-semibold text-slate-900">{activeStory.title || "Story preview"}</h3>
             </div>
-            <button
-              type="button"
-              onClick={() => window.location.href = `/share?id=${activeStory.id}`}
-              className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+            <a
+              href={activeStory.id ? `/share?id=${encodeURIComponent(activeStory.id)}` : "/share"}
+              className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
+              aria-label={activeStory.id ? `Focus story ${activeStory.title}` : "Open share page"}
             >
               Tap to focus
-            </button>
+            </a>
           </div>
-          {activeStory.description ? (
-            <p className="mt-2 text-sm text-slate-600">{activeStory.description}</p>
-          ) : (
-            <p className="mt-2 text-sm text-slate-600">
-              This story card is now interactive and keyboard accessible. Use the arrow buttons or swipe to browse the reel.
-            </p>
-          )}
+          <p className="mt-2 text-sm text-slate-600">
+            {activeStory.description ||
+              "Select a story to preview it here, then tap to open it in the focused view."}
+          </p>
         </div>
       )}
     </div>
