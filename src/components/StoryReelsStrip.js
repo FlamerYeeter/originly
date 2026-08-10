@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function StoryReelsStrip({
@@ -136,13 +137,13 @@ export default function StoryReelsStrip({
               <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Selected story</p>
               <h3 className="text-lg font-semibold text-slate-900">{activeStory.title || "Story preview"}</h3>
             </div>
-            <a
-              href={activeStory.id ? `/share?id=${encodeURIComponent(activeStory.id)}` : "/share"}
+            <Link
+              href={activeStory.id ? `/share/?id=${encodeURIComponent(activeStory.id)}` : "/share/"}
               className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
               aria-label={activeStory.id ? `Focus story ${activeStory.title}` : "Open share page"}
             >
               Tap to focus
-            </a>
+            </Link>
           </div>
           <p className="mt-2 text-sm text-slate-600">
             {activeStory.description ||
