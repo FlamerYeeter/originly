@@ -267,7 +267,7 @@ export default function IdeaCard({ idea, allowEdit = true }) {
       ) : (
         <>
           {idea.title ? (
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">{idea.title}</h3>
+            <h3 className="heading-3 text-slate-900 mb-2">{idea.title}</h3>
           ) : null}
             {idea.tags && idea.tags.length > 0 && (
               <div className="mb-3 flex flex-wrap gap-2">

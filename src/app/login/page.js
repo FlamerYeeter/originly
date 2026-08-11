@@ -40,7 +40,7 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-sm text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Originly</h1>
+        <h1 className="heading-1 text-gray-900 mb-2">Originly</h1>
         <p className="text-gray-600 mb-8">
           Capture your ideas. Prove they are yours.
         </p>

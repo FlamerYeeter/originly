@@ -49,7 +49,6 @@ export default function DashboardPage() {
   const handleSignOut = async () => {
     await signOut(auth);
   };
-
   if (loading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -66,28 +65,30 @@ export default function DashboardPage() {
             <Image src="/OriginlyLogo.png" alt="Originly logo" width={36} height={36} />
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-muted">Secure idea vault</p>
-              <h1 className="text-lg sm:text-2xl font-semibold tracking-tight">Originly</h1>
+              <h1 className="heading-2 tracking-tight">Originly</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <ThemeSwitcher />
-            <div className="text-right hidden sm:block">
-              <p className="text-sm text-muted">{user.displayName || user.email}</p>
-              <p className="text-xs text-muted">Logged in</p>
-            </div>
-            <Link href="/help" className="btn-app">
-              Help
+            <Link href="/help" className="btn-app p-2" aria-label="Help">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M9.09 9a3 3 0 1 1 5.82 1c-.1.43-.38.78-.77 1.07-.35.27-.69.6-.9 1.02-.18.35-.28.75-.28 1.2" />
+                <circle cx="12" cy="17" r="1" />
+              </svg>
             </Link>
-            <Link href="/community" className="btn-app">
-              Community
+            <Link href="/community" className="btn-app p-2" aria-label="Community">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.85" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
             </Link>
-            <button onClick={handleSignOut} className="btn-app hidden sm:inline-flex">
-              Sign out
-            </button>
-            <button onClick={handleSignOut} className="btn-app inline-flex sm:hidden p-2" aria-label="Sign out">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path d="M16 13v-2H7V8l-5 4 5 4v-3h9z" />
-                <path d="M20 3h-8v2h8v14h-8v2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" />
+            <button onClick={handleSignOut} className="btn-app p-2" aria-label="Sign out">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
               </svg>
             </button>
           </div>
@@ -108,52 +109,48 @@ export default function DashboardPage() {
         />
 
         <div className="glass-card overflow-hidden rounded-[2rem] border-border p-6 text-foreground bg-surface">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="card-header mb-6">
             <div>
-              <h2 className="text-xl font-semibold">Capture ideas</h2>
-              <p className="mt-1 text-sm text-muted">
-                Capture or verify ideas fast and keep your idea vault up to date.
-              </p>
+              <h2 className="heading-3">Capture ideas</h2>
+              <p className="mt-1 text-sm text-muted">Capture or verify ideas fast and keep your idea vault up to date.</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={() => setActiveTab("capture")}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  activeTab === "capture"
-                    ? "bg-slate-100 text-slate-950"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
+                onClick={() => router.push("/capture")}
+                className="btn-secondary"
               >
                 Capture
               </button>
               <button
                 onClick={() => setActiveTab("verify")}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  activeTab === "verify"
-                    ? "bg-slate-100 text-slate-950"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
+                className="btn-outline"
               >
                 Verify
               </button>
             </div>
           </div>
 
-          <section>{activeTab === "capture" ? <CaptureForm /> : <VerifyForm />}</section>
+          <section>
+            {activeTab === "verify" ? (
+              <VerifyForm />
+            ) : (
+              <div className="text-sm text-muted">
+                Use the Capture button above to record new ideas on the dedicated capture page.
+              </div>
+            )}
+          </section>
         </div>
 
         <section className="glass-card rounded-[2rem] border-border bg-surface p-6">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-muted">Your Vault</p>
-              <h2 className="text-2xl font-semibold">{ideas.length} idea{ideas.length === 1 ? "" : "s"}</h2>
+              <h2 className="heading-2">{ideas.length} idea{ideas.length === 1 ? "" : "s"}</h2>
             </div>
           </div>
           <div className="space-y-4">
             {ideas.length === 0 ? (
-              <p className="text-muted text-center py-10">
-                No ideas yet. Capture your first one above.
-              </p>
+              <p className="text-muted text-center py-10">No ideas yet. Capture your first one above.</p>
             ) : (
               ideas.map((idea) => <IdeaCard key={idea.id} idea={idea} />)
             )}

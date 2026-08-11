@@ -28,7 +28,7 @@ export default function AuthCallbackPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-white">
       <div className="text-center">
-        <p className="text-gray-600 text-lg">Signing you in...</p>
+        <p className="lead text-gray-600">Signing you in...</p>
         <p className="text-sm text-gray-400 mt-2">Closing browser...</p>
         <p className="text-sm text-gray-400 mt-4">If the browser does not close, tap the button below to return to the app.</p>
         <div className="mt-3">

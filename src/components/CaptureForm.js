@@ -676,20 +676,6 @@ export default function CaptureForm() {
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={() => {
-              if (showCamera) {
-                stopAndCleanupStream();
-              } else {
-                if (showAudioRecorder) stopAndCleanupStream();
-                startCamera({ forVideo: false });
-              }
-            }}
-            className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
-          >
-            {showCamera ? "Close Camera" : "Camera"}
-          </button>
-          <button
-            type="button"
             onClick={async () => {
               try {
                 if (showCamera) stopAndCleanupStream();
@@ -705,6 +691,7 @@ export default function CaptureForm() {
           >
             Audio
           </button>
+          <span className="text-sm text-slate-500">Use the bottom task bar for camera access.</span>
         </div>
         <div className="mt-3 text-xs text-slate-500">
           Watermark "Made in Originly" is permanently applied to captures to help attribution and provenance.
@@ -869,27 +856,13 @@ export default function CaptureForm() {
 
       {/* Mobile bottom action bar */}
       <div className="mobile-bottom-bar fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-area">
-        <div className="container-max flex items-center justify-between py-2">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-slate-700">
-                <path d="M3 11.5L12 4l9 7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M5 21V12h14v9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </Link>
-
+        <div className="container-max flex flex-wrap items-center justify-between gap-3 py-2">
+          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 shadow-sm">
             <button
               type="button"
-              onClick={() => {
-                if (showCamera) {
-                  stopAndCleanupStream();
-                } else {
-                  if (showAudioRecorder) stopAndCleanupStream();
-                  startCamera({ forVideo: false });
-                }
-              }}
-              className="rounded-full bg-slate-900 p-3 text-white shadow-lg"
-              aria-label="Toggle camera"
+              onClick={() => startCamera({ forVideo: false })}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-900 text-white shadow-lg"
+              aria-label="Open camera preview"
             >
               📷
             </button>
@@ -900,14 +873,33 @@ export default function CaptureForm() {
                 if (!isRecording) startRecording({ audioOnly: false });
                 else stopRecording();
               }}
-              className={`rounded-full p-3 text-white shadow-lg ${isRecording ? 'bg-amber-500' : 'bg-rose-500'}`}
-              aria-label="Record video"
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg ${isRecording ? 'bg-amber-500' : 'bg-rose-500'}`}
+              aria-label={isRecording ? 'Stop recording' : 'Start recording'}
             >
               {isRecording ? '⏹' : '●'}
             </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  if (showCamera) stopAndCleanupStream();
+                  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                  setMediaStream(stream);
+                  setShowAudioRecorder(true);
+                  setShowCamera(false);
+                } catch (err) {
+                  console.error(err);
+                }
+              }}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              aria-label="Open audio recorder"
+            >
+              🎙️
+            </button>
           </div>
 
-          <div className="flex-1 px-3">
+          <div className="flex-1 min-w-[220px] px-1">
             <button
               type="button"
               onClick={() => formRef.current?.requestSubmit()}
@@ -919,13 +911,13 @@ export default function CaptureForm() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/community" className="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100">
+            <Link href="/community" className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-100">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 12a5 5 0 100-10 5 5 0 000 10zM21 21v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Link>
 
-            <Link href="/dashboard" className="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100">
+            <Link href="/dashboard" className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-100">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 13h8V3H3v10zM13 21h8V11h-8v10zM13 3v6h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>

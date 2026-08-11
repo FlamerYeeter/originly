@@ -55,7 +55,7 @@ export default function PublicVerifyForm() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
       <div className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/20">
-        <h1 className="text-3xl font-semibold mb-3">Public Verification</h1>
+        <h1 className="heading-1 mb-3">Public Verification</h1>
         <p className="text-slate-400 mb-6">
           Verify a shared Originly record by its Origin ID or fingerprint hash.
         </p>
@@ -82,7 +82,7 @@ export default function PublicVerifyForm() {
         {result && (
           <div className="mt-6 rounded-3xl border border-slate-700 bg-slate-950/90 p-5 text-slate-100">
             <p className="text-sm text-slate-400">Record found.</p>
-            <h2 className="mt-3 text-xl font-semibold">{result.data.title || "Untitled"}</h2>
+            <h2 className="mt-3 heading-2">{result.data.title || "Untitled"}</h2>
             <p className="mt-2 text-sm text-slate-300">{result.data.content}</p>
             <div className="mt-4 grid gap-2 text-sm text-slate-300">
               <div>

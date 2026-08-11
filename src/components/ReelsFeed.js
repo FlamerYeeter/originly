@@ -80,7 +80,7 @@ export default function ReelsFeed({ items = [] }) {
               <div className="md:w-1/3 flex flex-col gap-3">
                 <div>
                   <p className="text-xs text-slate-500">{item.ownerName || item.owner || "Creator"}</p>
-                  <h3 className="text-lg font-semibold text-slate-900 mt-1">{item.title || item.category || "Untitled"}</h3>
+                  <h3 className="heading-3 text-slate-900 mt-1">{item.title || item.category || "Untitled"}</h3>
                 </div>
                 <p className="text-slate-700 leading-relaxed flex-1 overflow-auto">{item.content}</p>
                 <div className="flex items-center gap-2">

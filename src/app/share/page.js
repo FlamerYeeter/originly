@@ -87,7 +87,7 @@ function SharePageContent() {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4">
         <div className="max-w-xl rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-black/20">
-          <h1 className="text-2xl font-semibold mb-4">Loading...</h1>
+          <h1 className="heading-2 mb-4">Loading...</h1>
         </div>
       </div>
     );
@@ -97,9 +97,9 @@ function SharePageContent() {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4">
         <div className="max-w-xl rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-black/20">
-          <h1 className="text-2xl font-semibold mb-4">{error || "Share link not found"}</h1>
-          <p className="text-slate-400">This share link is invalid or the idea has been removed.</p>
-          <Link href="/dashboard" className="mt-4 inline-block text-sm text-slate-300 underline">
+          <h1 className="heading-2 mb-4">{error || "Share link not found"}</h1>
+          <p className="lead">This share link is invalid or the idea has been removed.</p>
+          <Link href="/dashboard" className="mt-4 inline-block muted-sm underline">
             Back to dashboard
           </Link>
         </div>
@@ -109,15 +109,18 @@ function SharePageContent() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4 py-12">
-      <div className="max-w-3xl rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/20">
-        <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="max-w-3xl section-card bg-slate-950/90 border-white/10 p-8 shadow-2xl shadow-black/20">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Shared idea</p>
-            <h1 className="text-3xl font-semibold">{idea.title || "Idea preview"}</h1>
+            <h1 className="heading-1">{idea.title || "Idea preview"}</h1>
           </div>
+          <Link href="/dashboard" className="btn-outline text-xs">
+            Back to dashboard
+          </Link>
         </div>
         <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-6">
-          <p className="text-lg leading-8 text-slate-100">{idea.content}</p>
+          <p className="lead text-slate-100">{idea.content}</p>
           <MediaPreview media={idea.media} />
         </div>
         {idea.tags && idea.tags.length > 0 && (

@@ -99,7 +99,7 @@ export default function RecordDetailsClient({ recordId }) {
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        <h1 className="text-2xl font-semibold mb-2">{record.title || "Untitled"}</h1>
+        <h1 className="heading-2 mb-2">{record.title || "Untitled"}</h1>
         <p className="text-sm text-slate-400 mb-4">{record.content}</p>
 
         {record.tags && record.tags.length > 0 && (
@@ -136,7 +136,7 @@ export default function RecordDetailsClient({ recordId }) {
         </div>
 
         <div className="mt-6">
-          <h3 className="text-lg font-semibold">Version History</h3>
+          <h3 className="heading-3">Version History</h3>
           {versions.length === 0 ? (
             <p className="text-sm text-slate-400 mt-2">No previous versions recorded.</p>
           ) : (

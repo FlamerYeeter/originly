@@ -59,36 +59,38 @@ export default function CommunityPage() {
           subtitle="Swipe through recent public ideas shared by the community."
         />
 
-        <div className="mb-8 flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/20">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Community feed</p>
-            <h1 className="text-3xl font-semibold">Other people&apos;s ideas</h1>
-            <p className="mt-2 text-slate-400">Browse public ideas shared around the community.</p>
-          </div>
-          <div className="mt-3 flex gap-3">
-            <button
-              className={`rounded-full px-4 py-2 text-sm font-medium ${showReels ? "bg-white border border-gray-200" : "bg-transparent text-slate-700"}`}
-              onClick={() => setShowReels(true)}
-            >
-              Reels
-            </button>
-            <button
-              className={`rounded-full px-4 py-2 text-sm font-medium ${!showReels ? "bg-white border border-gray-200" : "bg-transparent text-slate-700"}`}
-              onClick={() => setShowReels(false)}
-            >
-              List
-            </button>
+        <div className="section-card mb-8">
+          <div className="card-header">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-muted">Community feed</p>
+              <h1 className="heading-1">Other people's ideas</h1>
+              <p className="lead">Browse public ideas shared around the community.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                className={showReels ? "btn-secondary" : "btn-outline"}
+                onClick={() => setShowReels(true)}
+              >
+                Reels
+              </button>
+              <button
+                className={!showReels ? "btn-secondary" : "btn-outline"}
+                onClick={() => setShowReels(false)}
+              >
+                List
+              </button>
+            </div>
           </div>
         </div>
         <div>
           {error ? (
-            <div className="rounded-2xl border border-rose-100 bg-rose-50 p-6 text-center text-rose-700">
+            <div className="section-card border-rose-100 bg-rose-50 text-center text-rose-700">
               <p className="font-medium">Could not load community feed</p>
               <p className="mt-2 text-sm">{error}</p>
-              <p className="mt-2 text-xs text-slate-600">Check your Firebase project env vars and Firestore rules (sharedIdeas read access).</p>
+              <p className="mt-2 text-xs text-muted">Check your Firebase project env vars and Firestore rules (sharedIdeas read access).</p>
             </div>
           ) : ideas.length === 0 ? (
-            <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-slate-600">No public ideas have been shared yet.</div>
+            <div className="section-card text-center text-muted">No public ideas have been shared yet.</div>
           ) : showReels ? (
             <ReelsFeed items={ideas} />
           ) : (
