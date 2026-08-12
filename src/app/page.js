@@ -22,7 +22,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-      <Image src="/OriginlyLogo.png" alt="Originly logo" width={140} height={140} priority />
+      <Image src="/OriginlyLogo.png" alt="Originly logo" width={140} height={128} priority />
       <p className="text-gray-500">Loading...</p>
     </div>
   );

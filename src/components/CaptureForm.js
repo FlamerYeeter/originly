@@ -673,27 +673,10 @@ export default function CaptureForm() {
       </div>
       {locationMessage && <p className="mt-2 text-sm text-slate-500">{locationMessage}</p>}
       <div className="mt-4 space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                if (showCamera) stopAndCleanupStream();
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                setMediaStream(stream);
-                setShowAudioRecorder(true);
-                setShowCamera(false);
-              } catch (err) {
-                console.error(err);
-              }
-            }}
-            className="rounded-full border border-border px-4 py-2 text-sm text-foreground bg-surface hover:bg-surface-2"
-          >
-            Audio
-          </button>
-          <span className="text-sm text-slate-500">Use the bottom task bar for camera access.</span>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <strong className="font-semibold">Capture responsibility notice:</strong> by capturing or uploading an idea here, you confirm that the content is your original work or that you have the rights to share it.
         </div>
-        <div className="mt-3 text-xs text-slate-500">
+        <div className="text-xs text-slate-500">
           Watermark "Made in Originly" is permanently applied to captures to help attribution and provenance.
         </div>
 
@@ -784,13 +767,30 @@ export default function CaptureForm() {
 
       <div className="mt-4 rounded-lg border border-border bg-surface p-3 text-sm text-muted">
         <label className="mb-2 block font-medium text-foreground">Optional files</label>
-        <input
-          type="file"
-          multiple
-          accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt,.csv,.ppt,.pptx"
-          onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
-          className="block w-full text-sm text-muted file:mr-4 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-primary/90"
-        />
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <label
+              htmlFor="optional-files"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 cursor-pointer"
+            >
+              <span>Choose files</span>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-white text-sm">+</span>
+            </label>
+            <span className="text-sm text-slate-500">
+              {selectedFiles.length === 0
+                ? "No file chosen"
+                : `${selectedFiles.length} file${selectedFiles.length === 1 ? "" : "s"} selected`}
+            </span>
+          </div>
+          <input
+            id="optional-files"
+            type="file"
+            multiple
+            accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt,.csv,.ppt,.pptx"
+            onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
+            className="hidden"
+          />
+        </div>
         <p className="mt-2 text-xs text-muted">You can attach images, audio, video, or documents.</p>
         {selectedFiles.length > 0 && (
           <ul className="mt-2 list-disc pl-5 text-xs text-slate-500">
