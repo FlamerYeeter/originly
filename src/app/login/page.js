@@ -37,6 +37,57 @@ export default function LoginPage() {
     }
   };
 
+  const handlePiSignIn = async () => {
+    setSigningIn(true);
+    setStatusMessage("Starting Pi sign-in...");
+    setErrorMessage("");
+
+    try {
+      if (!window.Pi) {
+        throw new Error("Pi SDK failed to load. Please refresh and try again.");
+      }
+
+      const appId = process.env.NEXT_PUBLIC_PI_APP_ID;
+      if (!appId) {
+        throw new Error("Missing NEXT_PUBLIC_PI_APP_ID. Add your Pi app ID to .env.local.");
+      }
+
+      await window.Pi.init({
+        appId,
+      });
+
+      const authResult = await window.Pi.authenticate({
+        scopes: ["username", "payments"],
+      });
+
+      const response = await fetch("/api/pi/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(authResult),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Pi authentication failed.");
+      }
+
+      setStatusMessage("Pi sign-in successful.");
+      console.log("Pi auth success:", payload);
+    } catch (error) {
+      console.error("Pi sign in error:", error);
+      setSigningIn(false);
+      setStatusMessage("");
+      setErrorMessage(
+        error?.message || "Unable to sign in with Pi. Please try again."
+      );
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-sm text-center">
@@ -44,13 +95,24 @@ export default function LoginPage() {
         <p className="text-gray-600 mb-8">
           Capture your ideas. Prove they are yours.
         </p>
-        <button
-          onClick={handleGoogleSignIn}
-          disabled={signingIn}
-          className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {signingIn ? "Signing in..." : "Sign in with Google"}
-        </button>
+
+        <div className="space-y-3">
+          <button
+            onClick={handleGoogleSignIn}
+            disabled={signingIn}
+            className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {signingIn ? "Signing in..." : "Sign in with Google"}
+          </button>
+
+          <button
+            onClick={handlePiSignIn}
+            disabled={signingIn}
+            className="w-full bg-[#1E5BFF] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#1747d8] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {signingIn ? "Signing in..." : "Continue with Pi"}
+          </button>
+        </div>
 
         {statusMessage ? (
           <p className="mt-4 text-sm text-blue-600">{statusMessage}</p>
