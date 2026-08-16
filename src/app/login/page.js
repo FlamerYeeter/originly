@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { initiateOAuthFlow } from "@/lib/authHandler";
+import PiLoginButton from "@/components/PiLoginButton";
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
@@ -37,55 +38,18 @@ export default function LoginPage() {
     }
   };
 
-  const handlePiSignIn = async () => {
-    setSigningIn(true);
-    setStatusMessage("Starting Pi sign-in...");
+  const handlePiSuccess = (result) => {
+    console.log("Pi login success:", result);
+    setSigningIn(false);
+    setStatusMessage("Pi login succeeded. Redirecting...");
     setErrorMessage("");
+    router.replace("/dashboard");
+  };
 
-    try {
-      if (!window.Pi) {
-        throw new Error("Pi SDK failed to load. Please refresh and try again.");
-      }
-
-      const appId = process.env.NEXT_PUBLIC_PI_APP_ID;
-      if (!appId) {
-        throw new Error("Missing NEXT_PUBLIC_PI_APP_ID. Add your Pi app ID to .env.local.");
-      }
-
-      await window.Pi.init({
-        appId,
-      });
-
-      const authResult = await window.Pi.authenticate({
-        scopes: ["username", "payments"],
-      });
-
-      const response = await fetch("/api/pi/auth", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(authResult),
-      });
-
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload?.error || "Pi authentication failed.");
-      }
-
-      setStatusMessage("Pi sign-in successful.");
-      console.log("Pi auth success:", payload);
-    } catch (error) {
-      console.error("Pi sign in error:", error);
-      setSigningIn(false);
-      setStatusMessage("");
-      setErrorMessage(
-        error?.message || "Unable to sign in with Pi. Please try again."
-      );
-    } finally {
-      setSigningIn(false);
-    }
+  const handlePiError = (message) => {
+    setSigningIn(false);
+    setStatusMessage("");
+    setErrorMessage(message || "Pi login failed.");
   };
 
   return (
@@ -95,8 +59,7 @@ export default function LoginPage() {
         <p className="text-gray-600 mb-8">
           Capture your ideas. Prove they are yours.
         </p>
-
-        <div className="space-y-3">
+        <div className="space-y-4">
           <button
             onClick={handleGoogleSignIn}
             disabled={signingIn}
@@ -105,13 +68,13 @@ export default function LoginPage() {
             {signingIn ? "Signing in..." : "Sign in with Google"}
           </button>
 
-          <button
-            onClick={handlePiSignIn}
-            disabled={signingIn}
-            className="w-full bg-[#1E5BFF] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#1747d8] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {signingIn ? "Signing in..." : "Continue with Pi"}
-          </button>
+          <div className="relative flex items-center gap-3">
+            <div className="h-px flex-1 bg-gray-300" />
+            <span className="text-xs uppercase tracking-[0.2em] text-gray-500">or</span>
+            <div className="h-px flex-1 bg-gray-300" />
+          </div>
+
+          <PiLoginButton onSuccess={handlePiSuccess} onError={handlePiError} />
         </div>
 
         {statusMessage ? (

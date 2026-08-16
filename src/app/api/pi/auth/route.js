@@ -2,37 +2,35 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const payload = await request.json();
 
-    if (!body || typeof body !== "object") {
+    if (!payload || !payload.user || !payload.user.uid) {
       return NextResponse.json(
-        { ok: false, error: "Invalid Pi auth payload." },
+        { ok: false, error: "Invalid Pi authentication payload" },
         { status: 400 }
       );
     }
 
-    const user = body.user;
-    const piUserId = user?.uid || user?.username || user?.id;
+    const piUserId = payload.user.uid;
+    const username = payload.user.username || "pi-user";
 
-    if (!piUserId) {
-      return NextResponse.json(
-        { ok: false, error: "Pi auth payload missing user identity." },
-        { status: 400 }
-      );
-    }
+    // NOTE:
+    // This should be replaced with your real Pi verification logic.
+    // At minimum, verify the signed payload and app ID against Pi's API.
+    // For now, we accept the payload and treat it as a valid server-side auth result.
 
     return NextResponse.json({
       ok: true,
-      message: "Pi auth verified",
+      provider: "pi",
       user: {
         uid: piUserId,
-        username: user?.username || null,
+        username,
       },
     });
   } catch (error) {
     console.error("Pi auth route error:", error);
     return NextResponse.json(
-      { ok: false, error: "Pi auth failed." },
+      { ok: false, error: "Unexpected Pi authentication error" },
       { status: 500 }
     );
   }
