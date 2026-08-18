@@ -1,10 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function PiLoginButton({ onSuccess, onError }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.Pi) {
+      return;
+    }
+
+    try {
+      window.Pi.init({
+        version: "2.0",
+        sandbox: process.env.NODE_ENV !== "production",
+      });
+      setReady(true);
+    } catch (error) {
+      console.error("Pi SDK initialization failed:", error);
+      const err = "Pi Network SDK could not be initialized.";
+      setMessage(err);
+      onError?.(err);
+    }
+  }, [onError]);
 
   const handlePiLogin = async () => {
     if (!window.Pi) {
@@ -12,6 +32,21 @@ export default function PiLoginButton({ onSuccess, onError }) {
       setMessage(err);
       onError?.(err);
       return;
+    }
+
+    if (!ready) {
+      try {
+        window.Pi.init({
+          version: "2.0",
+          sandbox: process.env.NODE_ENV !== "production",
+        });
+        setReady(true);
+      } catch (error) {
+        const err = "Pi Network SDK was not initialized. Call init() before any other method.";
+        setMessage(err);
+        onError?.(err);
+        return;
+      }
     }
 
     setLoading(true);
