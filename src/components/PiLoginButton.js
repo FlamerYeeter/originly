@@ -33,9 +33,13 @@ export default function PiLoginButton({ onSuccess, onError }) {
     setMessage("");
 
     try {
-      const authResponse = await window.Pi.authenticate({
-        scopes: ["username", "payments"],
-      });
+      const authResponse = await window.Pi.authenticate(
+        ["username", "payments"],
+        function onIncompletePaymentFound(payment) {
+          // Handle incomplete payment - log for now
+          console.warn("Incomplete payment found:", payment);
+        }
+      );
 
       const response = await fetch("/api/pi/auth", {
         method: "POST",
