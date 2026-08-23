@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { signInWithCustomToken } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function PiLoginButton({ onSuccess, onError }) {
   const [loading, setLoading] = useState(false);
@@ -54,6 +56,9 @@ export default function PiLoginButton({ onSuccess, onError }) {
       if (!response.ok) {
         throw new Error(result?.error || "Pi authentication failed.");
       }
+
+      // Sign into Firebase with the custom token from the server
+      await signInWithCustomToken(auth, result.customToken);
 
       setMessage("Pi sign-in successful");
       onSuccess?.(result);
