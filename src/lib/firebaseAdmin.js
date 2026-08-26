@@ -7,10 +7,21 @@ function getFirebaseAdmin() {
   }
 
   // If a service account JSON is provided via env var, use it.
-  // Otherwise, fall back to application default credentials (works on GCP/Firebase hosting).
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-    : undefined;
+  // Handles both single-line and multi-line JSON in the env var.
+  let serviceAccount;
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (raw) {
+    try {
+      serviceAccount = JSON.parse(raw);
+    } catch {
+      // If multi-line JSON broke the parse, try collapsing whitespace
+      try {
+        serviceAccount = JSON.parse(raw.replace(/\n/g, "\\n").replace(/\r/g, ""));
+      } catch {
+        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Ensure it is valid JSON.");
+      }
+    }
+  }
 
   const app = initializeApp(
     serviceAccount

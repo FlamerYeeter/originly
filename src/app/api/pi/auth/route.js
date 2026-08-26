@@ -1,7 +1,26 @@
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebaseAdmin";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request) {
+  // Rate limit: 5 attempts per IP per 60 seconds
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded?.split(",")[0]?.trim() || "unknown";
+  const { limited, retryAfterMs } = rateLimit(`pi-auth:${ip}`, {
+    maxRequests: 5,
+    windowMs: 60_000,
+  });
+
+  if (limited) {
+    return NextResponse.json(
+      { ok: false, error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil(retryAfterMs / 1000)) },
+      }
+    );
+  }
+
   try {
     const payload = await request.json();
 
