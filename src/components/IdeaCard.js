@@ -11,6 +11,7 @@ export default function IdeaCard({ idea, allowEdit = true }) {
   const [sharing, setSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [shareMessage, setShareMessage] = useState("");
+  const [showShareWarning, setShowShareWarning] = useState(false);
   const [likes, setLikes] = useState(idea.likes || 0);
   const [liked, setLiked] = useState(false);
   const [liking, setLiking] = useState(false);
@@ -54,6 +55,12 @@ export default function IdeaCard({ idea, allowEdit = true }) {
 
   const handleShare = async () => {
     if (!user || sharing || !isPublic) return;
+    // If this is the first time sharing (no existing share link), show warning
+    if (!idea.shareId && !showShareWarning) {
+      setShowShareWarning(true);
+      return;
+    }
+    setShowShareWarning(false);
     setSharing(true);
     setShareMessage("");
 
@@ -353,6 +360,32 @@ export default function IdeaCard({ idea, allowEdit = true }) {
               >
                 {sharing ? "Sharing..." : "Share Idea"}
               </button>
+              {showShareWarning && (
+                <div className="w-full mt-2 rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/40 p-3">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    Are you sure you want to share this publicly?
+                  </p>
+                  <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                    Once shared, your idea will be visible to everyone. Others may view, copy, or replicate it. While Originly timestamps your ownership, public exposure carries inherent risk.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      className="rounded-full px-3 py-1 text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition"
+                    >
+                      Share anyway
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowShareWarning(false)}
+                      className="rounded-full px-3 py-1 text-xs font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
               {shareUrl && (
                 <a
                   href={shareUrl}
