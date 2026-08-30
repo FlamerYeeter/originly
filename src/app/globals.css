@@ -336,7 +336,8 @@ img, video {
   }
 
   .mobile-bottom-bar {
-    height: 72px;
+    height: auto;
+    min-height: 72px;
     padding: 10px 12px;
   }
 
@@ -436,7 +437,7 @@ html, body {
 }
 
 /* Ensure main content doesn't get hidden behind bottom bar */
-main { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); }
+main { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 160px); }
 
 .safe-area {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
