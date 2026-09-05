@@ -437,7 +437,7 @@ html, body {
 }
 
 /* Ensure main content doesn't get hidden behind bottom bar */
-main { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 160px); }
+main { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); }
 
 .safe-area {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);

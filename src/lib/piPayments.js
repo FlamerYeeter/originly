@@ -56,6 +56,18 @@ export async function onIncompletePaymentFound(payment) {
 export async function payForIdeaSubmission() {
   await ensurePiReady();
 
+  // Ensure the current Pi session holds the "payments" scope before creating a
+  // payment. createPayment fails with "Cannot create a payment without 'payments'
+  // scope" if the user was authenticated without it. Re-authenticating here is
+  // idempotent and also wires up the incomplete-payment handler.
+  try {
+    await window.Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+  } catch (authErr) {
+    throw new Error(
+      authErr?.message || "Pi authentication with payments scope failed."
+    );
+  }
+
   const paymentData = buildIdeaSubmissionPaymentData();
 
   return new Promise((resolve, reject) => {

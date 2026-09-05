@@ -934,72 +934,56 @@ export default function CaptureForm() {
 
       {/* Mobile bottom action bar */}
       <div className="mobile-bottom-bar fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-area">
-        <div className="container-max flex flex-col gap-2 py-2">
-          {/* Row 1: media capture tools + navigation */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 shadow-sm">
-              <button
-                type="button"
-                onClick={() => startCamera({ forVideo: false })}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-900 text-white shadow-lg"
-                aria-label="Open camera preview"
-              >
-                📷
-              </button>
+        <div className="container-max flex items-center gap-2 py-2">
+          {/* Media capture tools (compact) */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => startCamera({ forVideo: false })}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white text-sm shadow"
+              aria-label="Open camera preview"
+            >
+              📷
+            </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isRecording) startRecording({ audioOnly: false });
-                  else stopRecording();
-                }}
-                className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg ${isRecording ? 'bg-amber-500' : 'bg-rose-500'}`}
-                aria-label={isRecording ? 'Stop recording' : 'Start recording'}
-              >
-                {isRecording ? '⏹' : '●'}
-              </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!isRecording) startRecording({ audioOnly: false });
+                else stopRecording();
+              }}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-white text-sm shadow ${isRecording ? 'bg-amber-500' : 'bg-rose-500'}`}
+              aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+            >
+              {isRecording ? '⏹' : '●'}
+            </button>
 
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    if (showCamera) stopAndCleanupStream();
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    setMediaStream(stream);
-                    setShowAudioRecorder(true);
-                    setShowCamera(false);
-                  } catch (err) {
-                    console.error(err);
-                  }
-                }}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                aria-label="Open audio recorder"
-              >
-                🎙️
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-            <Link href="/community" className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-100">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 12a5 5 0 100-10 5 5 0 000 10zM21 21v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </Link>
-
-            <Link href="/dashboard" className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-100">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 13h8V3H3v10zM13 21h8V11h-8v10zM13 3v6h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </Link>
-            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  if (showCamera) stopAndCleanupStream();
+                  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                  setMediaStream(stream);
+                  setShowAudioRecorder(true);
+                  setShowCamera(false);
+                } catch (err) {
+                  console.error(err);
+                }
+              }}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-white text-sm text-slate-700 hover:bg-slate-100"
+              aria-label="Open audio recorder"
+            >
+              🎙️
+            </button>
           </div>
 
-          {/* Row 2: primary submit action (always full-width and visible) */}
+          {/* Primary submit action - dominant, grows to fill space */}
           <button
             type="button"
             onClick={() => formRef.current?.requestSubmit()}
             disabled={!content.trim() || saving || uploadingFiles || paymentStatus === "paying"}
-            className="w-full rounded-full bg-gray-900 text-white py-3 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 min-w-0 rounded-full bg-gray-900 text-white py-2.5 px-3 text-sm font-medium shadow-lg truncate disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {paymentStatus === "paying"
               ? "Awaiting payment..."
@@ -1007,6 +991,21 @@ export default function CaptureForm() {
               ? "Capturing..."
               : `Pay ${IDEA_SUBMISSION_PRICE} Pi & Capture Idea`}
           </button>
+
+          {/* Navigation (compact) */}
+          <div className="flex items-center gap-1 shrink-0">
+            <Link href="/community" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-100" aria-label="Community">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12a5 5 0 100-10 5 5 0 000 10zM21 21v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
+
+            <Link href="/dashboard" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-100" aria-label="Dashboard">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 13h8V3H3v10zM13 21h8V11h-8v10zM13 3v6h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
