@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { initiateOAuthFlow } from "@/lib/authHandler";
 import PiLoginButton from "@/components/PiLoginButton";
+import LegalLinks from "@/components/LegalLinks";
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
@@ -85,6 +86,7 @@ export default function LoginPage() {
           <p className="mt-4 text-sm text-red-600 whitespace-pre-line">{errorMessage}</p>
         ) : null}
       </div>
+      <LegalLinks className="mt-8 text-gray-600" />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import LegalLinks from "@/components/LegalLinks";
 
 export default function HelpPage() {
   const { user } = useAuth();
@@ -92,6 +93,7 @@ export default function HelpPage() {
             </ul>
           </article>
         </section>
+        <LegalLinks className="pb-4 text-muted" />
       </main>
     </div>
   );

@@ -13,6 +13,7 @@ import IdeaCard from "@/components/IdeaCard";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import VerifyForm from "@/components/VerifyForm";
 import StoryReelsStrip from "@/components/StoryReelsStrip";
+import LegalLinks from "@/components/LegalLinks";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -156,6 +157,7 @@ export default function DashboardPage() {
             )}
           </div>
         </section>
+        <LegalLinks className="pb-4 text-muted" />
       </main>
     </div>
   );

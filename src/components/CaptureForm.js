@@ -744,6 +744,17 @@ export default function CaptureForm() {
           <p className="mt-1 text-xs text-muted">
             You pay {IDEA_SUBMISSION_PRICE} Pi per idea. Payment is verified securely before your idea is saved.
           </p>
+          <p className="mt-2 text-xs text-muted">
+            Before paying, review our{" "}
+            <Link href="/terms" className="underline underline-offset-2">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline underline-offset-2">
+              Privacy Policy
+            </Link>
+            .
+          </p>
           {paymentMessage && (
             <p
               className={`mt-2 text-xs ${
