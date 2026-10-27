@@ -66,6 +66,9 @@ export default function HelpPage() {
               <li>
                 <span className="font-semibold">Save:</span> Press the capture button to store the idea and generate a proof hash.
               </li>
+              <li>
+                <span className="font-semibold">Free captures:</span> Accounts can hold up to 3 free captures. One refills every 12 hours while below the limit; additional captures cost 1 Pi and require Pi Browser.
+              </li>
             </ul>
           </article>
 

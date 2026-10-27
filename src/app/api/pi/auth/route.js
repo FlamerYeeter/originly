@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
-import { adminAuth } from "@/lib/firebaseAdmin";
+import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
+import { verifyPiAccessToken } from "@/lib/piServer";
 import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request) {
-  // Rate limit: 5 attempts per IP per 60 seconds
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || "unknown";
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const { limited, retryAfterMs } = rateLimit(`pi-auth:${ip}`, {
     maxRequests: 5,
     windowMs: 60_000,
   });
-
   if (limited) {
     return NextResponse.json(
       { ok: false, error: "Too many requests. Please try again later." },
@@ -23,46 +21,30 @@ export async function POST(request) {
 
   try {
     const payload = await request.json();
-
-    // The Pi SDK authenticate() returns { accessToken, user: { uid, username } }
-    const accessToken = payload?.accessToken;
-    const piUid = payload?.user?.uid;
-
-    if (!accessToken || !piUid) {
+    if (!payload?.accessToken || !payload?.user?.uid) {
       return NextResponse.json(
         { ok: false, error: "Invalid Pi authentication payload. Missing accessToken or user.uid." },
         { status: 400 }
       );
     }
+    const piUser = await verifyPiAccessToken(payload?.accessToken, payload?.user?.uid);
+    const piFirebaseUid = `pi_${piUser.uid}`;
+    const identitySnap = await adminDb.collection("accountIdentityLinks").doc(piFirebaseUid).get();
+    const identity = identitySnap.exists ? identitySnap.data() : null;
 
-    // Verify the Pi access token against Pi's /v2/me endpoint
-    const piMeResponse = await fetch("https://api.minepi.com/v2/me", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    if (!piMeResponse.ok) {
+    if (identity?.status === "linking") {
       return NextResponse.json(
-        { ok: false, error: "Pi access token verification failed." },
-        { status: 401 }
+        { ok: false, error: "Pi account linking is in progress. Please try again shortly." },
+        { status: 409 }
       );
     }
 
-    const piUser = await piMeResponse.json();
-
-    // Ensure the uid from the token matches what the client sent
-    if (piUser.uid !== piUid) {
-      return NextResponse.json(
-        { ok: false, error: "Pi user identity mismatch." },
-        { status: 401 }
-      );
-    }
-
-    // Create a Firebase custom token for this Pi user
-    // Prefix the uid to avoid collisions with other auth providers
-    const firebaseUid = `pi_${piUser.uid}`;
+    const firebaseUid =
+      identity?.status === "linked" ? identity.primaryUid : piFirebaseUid;
     const customToken = await adminAuth.createCustomToken(firebaseUid, {
       provider: "pi",
       piUsername: piUser.username || "pi-user",
+      ...(identity?.status === "linked" ? { linkedPiUid: piUser.uid } : {}),
     });
 
     return NextResponse.json({
@@ -71,13 +53,22 @@ export async function POST(request) {
       user: {
         uid: firebaseUid,
         username: piUser.username || "pi-user",
+        linked: identity?.status === "linked",
       },
     });
   } catch (error) {
     console.error("Pi auth route error:", error);
+    const status =
+      error?.message === "Pi access token verification failed." ||
+      error?.message === "Pi user identity mismatch."
+        ? 401
+        : 500;
     return NextResponse.json(
-      { ok: false, error: "Unexpected Pi authentication error." },
-      { status: 500 }
+      {
+        ok: false,
+        error: status === 401 ? error.message : "Unexpected Pi authentication error.",
+      },
+      { status }
     );
   }
 }

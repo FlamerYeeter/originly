@@ -4,6 +4,7 @@ import { adminDb } from "@/lib/firebaseAdmin";
 import { IDEA_SUBMISSION_PRODUCT } from "@/config/payments";
 import { FieldValue } from "firebase-admin/firestore";
 import { rateLimit } from "@/lib/rateLimit";
+import { resolveCanonicalUid } from "@/lib/accountIdentity";
 
 /**
  * Marks a completed payment as consumed and links it to a submitted idea.
@@ -23,6 +24,7 @@ export async function POST(request) {
     if (!decoded) {
       return NextResponse.json({ ok: false, error: "Unauthorized." }, { status: 401 });
     }
+    const firebaseUid = await resolveCanonicalUid(decoded.uid);
 
     const { paymentId, ideaId } = await request.json();
     if (!paymentId) {
@@ -39,7 +41,7 @@ export async function POST(request) {
       const data = snap.data();
 
       // The payment must belong to the requesting user.
-      if (data.firebaseUid !== decoded.uid) {
+      if (data.firebaseUid !== firebaseUid) {
         return { ok: false, status: 403, error: "Payment does not belong to this user." };
       }
       if (data.status !== "completed") {

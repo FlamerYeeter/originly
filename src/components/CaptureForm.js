@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { collection, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import MediaPreview from "@/components/MediaPreview";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { generateHash } from "@/lib/hash";
 import { uploadIdeaFiles } from "@/lib/supabase";
-import { payForIdeaSubmission, consumePayment } from "@/lib/piPayments";
+import { payForIdeaSubmission } from "@/lib/piPayments";
 import { IDEA_SUBMISSION_PRICE } from "@/config/payments";
 
 export default function CaptureForm() {
@@ -39,6 +37,9 @@ export default function CaptureForm() {
   const [paymentStatus, setPaymentStatus] = useState("idle"); // idle | paying | paid | error
   const [paymentMessage, setPaymentMessage] = useState("");
   const [paidPaymentId, setPaidPaymentId] = useState(null);
+  const [captureAllowance, setCaptureAllowance] = useState(null);
+  const [allowanceLoading, setAllowanceLoading] = useState(true);
+  const [allowanceError, setAllowanceError] = useState("");
   const watermarkEnabled = true;
   const watermarkText = "Made in Originly";
   const objectUrlsRef = useRef([]);
@@ -47,6 +48,50 @@ export default function CaptureForm() {
   const [facingMode, setFacingMode] = useState("environment"); // "environment" (back) or "user" (front)
   const { user } = useAuth();
   const formRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCaptureAllowance() {
+      if (!user) {
+        setCaptureAllowance(null);
+        setAllowanceLoading(false);
+        return;
+      }
+
+      setAllowanceLoading(true);
+      setAllowanceError("");
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch("/api/captures", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || "Unable to check free captures.");
+        }
+        if (!cancelled) {
+          setCaptureAllowance({
+            freeCapturesRemaining: result.freeCapturesRemaining,
+            nextFreeCaptureAt: result.nextFreeCaptureAt,
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to load capture allowance:", error);
+          setAllowanceError(error.message || "Unable to check free captures.");
+        }
+      } finally {
+        if (!cancelled) setAllowanceLoading(false);
+      }
+    }
+
+    loadCaptureAllowance();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const reverseGeocode = async (latitude, longitude) => {
     try {
@@ -115,9 +160,15 @@ export default function CaptureForm() {
     }
     setTitleError("");
 
-    // Payment gate: require a verified payment before submitting.
+    if (!user || allowanceLoading || !captureAllowance || allowanceError) {
+      setPaymentStatus("error");
+      setPaymentMessage(allowanceError || "Free capture availability is still loading. Please try again.");
+      return;
+    }
+
+    // Only request a Pi payment after the account has used its free captures.
     let paymentId = paidPaymentId;
-    if (!paymentId) {
+    if (!paymentId && captureAllowance.freeCapturesRemaining === 0) {
       setPaymentStatus("paying");
       setPaymentMessage(`Waiting for ${IDEA_SUBMISSION_PRICE} Pi payment...`);
       try {
@@ -168,7 +219,7 @@ export default function CaptureForm() {
       const ideaData = {
         title: title.trim(),
         content: content.trim(),
-        hash: hash,
+        hash,
         category,
         tags: tagsInput
           .split(",")
@@ -176,13 +227,6 @@ export default function CaptureForm() {
           .filter(Boolean)
           .slice(0, 20),
         visibility,
-        ownerUid: user.uid,
-        ownerName: user.displayName || user.email || "Anonymous",
-        createdAt: serverTimestamp(),
-        likes: 0,
-        likedBy: [],
-        paymentId: paymentId,
-        paymentAmount: IDEA_SUBMISSION_PRICE,
       };
       if (useLocation && location) {
         ideaData.location = location;
@@ -198,24 +242,30 @@ export default function CaptureForm() {
           name: file.name,
         }));
       }
-      // Save the idea to Firestore
-      const docRef = await addDoc(collection(db, "users", user.uid, "ideas"), ideaData);
-      // persist origin ID and initial version metadata
-      await updateDoc(docRef, {
-        originId: docRef.id,
-        version: "v1",
-        versionNumber: 1,
+      const token = await user.getIdToken();
+      const response = await fetch("/api/captures", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ idea: ideaData, paymentId }),
       });
-
-      // Mark the payment as consumed and link it to this idea (server-verified).
-      try {
-        await consumePayment(paymentId, docRef.id);
-      } catch (consumeErr) {
-        // The idea is saved but we couldn't finalize the payment link.
-        // Log for follow-up; do not block the user's saved idea.
-        console.error("Failed to consume payment:", consumeErr);
+      const result = await response.json();
+      if (!response.ok || !result.ok) {
+        if (Number.isInteger(result.freeCapturesRemaining)) {
+          setCaptureAllowance({
+            freeCapturesRemaining: result.freeCapturesRemaining,
+            nextFreeCaptureAt: result.nextFreeCaptureAt,
+          });
+        }
+        throw new Error(result.error || "Unable to save this capture.");
       }
 
+      setCaptureAllowance({
+        freeCapturesRemaining: result.freeCapturesRemaining,
+        nextFreeCaptureAt: result.nextFreeCaptureAt,
+      });
       setTitle("");
       setTagsInput("");
       setContent("");
@@ -227,7 +277,7 @@ export default function CaptureForm() {
       setPaymentMessage("");
     } catch (error) {
       console.error("Error saving idea:", error);
-      setFileMessage("File upload failed. Please try again.");
+      setFileMessage(error.message || "Unable to save this capture. Please try again.");
     } finally {
       setUploadingFiles(false);
       setSaving(false);
@@ -719,7 +769,11 @@ export default function CaptureForm() {
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
           <div className="flex items-center justify-between gap-2">
             <span className="font-semibold text-foreground">
-              Submission fee: {IDEA_SUBMISSION_PRICE} Pi
+              {allowanceLoading
+                ? "Checking free captures..."
+                : captureAllowance?.freeCapturesRemaining > 0
+                ? `${captureAllowance.freeCapturesRemaining} free capture${captureAllowance.freeCapturesRemaining === 1 ? "" : "s"} available`
+                : `Capture fee: ${IDEA_SUBMISSION_PRICE} Pi`}
             </span>
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -729,6 +783,8 @@ export default function CaptureForm() {
                   ? "bg-amber-100 text-amber-700"
                   : paymentStatus === "error"
                   ? "bg-rose-100 text-rose-700"
+                  : captureAllowance?.freeCapturesRemaining > 0
+                  ? "bg-emerald-100 text-emerald-700"
                   : "bg-slate-100 text-slate-600"
               }`}
             >
@@ -738,11 +794,21 @@ export default function CaptureForm() {
                 ? "Processing"
                 : paymentStatus === "error"
                 ? "Failed"
+                : allowanceLoading
+                ? "Checking"
+                : captureAllowance?.freeCapturesRemaining > 0
+                ? "Free"
                 : "Payment required"}
             </span>
           </div>
           <p className="mt-1 text-xs text-muted">
-            You pay {IDEA_SUBMISSION_PRICE} Pi per idea. Payment is verified securely before your idea is saved.
+            {allowanceError
+              ? allowanceError
+              : captureAllowance?.freeCapturesRemaining > 0
+              ? `You get up to 3 free captures. One free capture refills every 12 hours; additional captures cost ${IDEA_SUBMISSION_PRICE} Pi when your free balance is empty.`
+              : captureAllowance?.nextFreeCaptureAt
+              ? `Your next free capture refills at ${new Date(captureAllowance.nextFreeCaptureAt).toLocaleString()}. Additional captures cost ${IDEA_SUBMISSION_PRICE} Pi and require Pi Browser. Google accounts must link Pi from the dashboard before paying.`
+              : `Free captures refill one at a time every 12 hours, up to 3. Additional captures cost ${IDEA_SUBMISSION_PRICE} Pi and require Pi Browser. Google accounts must link Pi from the dashboard before paying; payment is verified securely.`}
           </p>
           <p className="mt-2 text-xs text-muted">
             Before paying, review our{" "}
@@ -766,7 +832,7 @@ export default function CaptureForm() {
           )}
         </div>
         <div className="text-xs text-slate-500">
-          Watermark "Made in Originly" is permanently applied to captures to help attribution and provenance.
+          Watermark &quot;Made in Originly&quot; is permanently applied to captures to help attribution and provenance.
         </div>
 
         {showCamera && (
@@ -993,13 +1059,23 @@ export default function CaptureForm() {
           <button
             type="button"
             onClick={() => formRef.current?.requestSubmit()}
-            disabled={!content.trim() || saving || uploadingFiles || paymentStatus === "paying"}
+            disabled={
+              !content.trim() ||
+              saving ||
+              uploadingFiles ||
+              paymentStatus === "paying" ||
+              allowanceLoading ||
+              !captureAllowance ||
+              Boolean(allowanceError)
+            }
             className="flex-1 min-w-0 rounded-full bg-gray-900 text-white py-2.5 px-3 text-sm font-medium shadow-lg truncate disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {paymentStatus === "paying"
               ? "Awaiting payment..."
               : saving || uploadingFiles
               ? "Capturing..."
+              : captureAllowance?.freeCapturesRemaining > 0
+              ? `Free Capture (${captureAllowance.freeCapturesRemaining} left)`
               : `Pay ${IDEA_SUBMISSION_PRICE} Pi & Capture Idea`}
           </button>
 

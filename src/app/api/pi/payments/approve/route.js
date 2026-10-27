@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { verifyFirebaseIdToken, getPiPayment, approvePiPayment } from "@/lib/piServer";
+import {
+  verifyFirebaseIdToken,
+  getPiPayment,
+  approvePiPayment,
+  getExpectedPiUid,
+} from "@/lib/piServer";
 import { IDEA_SUBMISSION_PRODUCT } from "@/config/payments";
 import { rateLimit } from "@/lib/rateLimit";
 
@@ -25,6 +30,16 @@ export async function POST(request) {
 
     // Fetch the payment from Pi servers (source of truth) and validate the product/amount.
     const payment = await getPiPayment(paymentId);
+    const expectedPiUid = await getExpectedPiUid(decoded);
+    if (!expectedPiUid) {
+      return NextResponse.json(
+        { ok: false, error: "Link your Pi account from the dashboard before paying." },
+        { status: 403 }
+      );
+    }
+    if (payment?.user_uid !== expectedPiUid) {
+      return NextResponse.json({ ok: false, error: "Pi payment account mismatch." }, { status: 403 });
+    }
 
     const expectedAmount = IDEA_SUBMISSION_PRODUCT.amount;
     const paymentAmount = Number(payment?.amount);

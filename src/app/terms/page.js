@@ -73,6 +73,11 @@ export default function TermsOfServicePage() {
       <section>
         <h2 className="heading-3">6. Pi payments</h2>
         <p className="mt-3">
+          Accounts receive up to three free idea captures. When the balance is below that limit, one free capture
+          refills every 12 hours. When no free captures are available, a capture may require a Pi payment at the
+          price shown in the app.
+        </p>
+        <p className="mt-3">
           Some idea submissions require a Pi payment. The price shown in the app before payment is the price for
           that submission; prices and features may change for future submissions. Payments are initiated and
           processed through Pi Network and are subject to the applicable Pi Network terms, network availability, and

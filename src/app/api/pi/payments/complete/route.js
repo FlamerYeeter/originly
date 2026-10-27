@@ -3,11 +3,13 @@ import {
   verifyFirebaseIdToken,
   getPiPayment,
   completePiPayment,
+  getExpectedPiUid,
 } from "@/lib/piServer";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { IDEA_SUBMISSION_PRODUCT } from "@/config/payments";
 import { FieldValue } from "firebase-admin/firestore";
 import { rateLimit } from "@/lib/rateLimit";
+import { resolveCanonicalUid } from "@/lib/accountIdentity";
 
 export async function POST(request) {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -22,6 +24,7 @@ export async function POST(request) {
     if (!decoded) {
       return NextResponse.json({ ok: false, error: "Unauthorized." }, { status: 401 });
     }
+    const firebaseUid = await resolveCanonicalUid(decoded.uid);
 
     const { paymentId, txid } = await request.json();
     if (!paymentId || !txid) {
@@ -33,6 +36,16 @@ export async function POST(request) {
 
     // Fetch the payment from Pi servers (source of truth).
     const payment = await getPiPayment(paymentId);
+    const expectedPiUid = await getExpectedPiUid(decoded);
+    if (!expectedPiUid) {
+      return NextResponse.json(
+        { ok: false, error: "Link your Pi account from the dashboard before paying." },
+        { status: 403 }
+      );
+    }
+    if (payment?.user_uid !== expectedPiUid) {
+      return NextResponse.json({ ok: false, error: "Pi payment account mismatch." }, { status: 403 });
+    }
 
     // Validate product + amount again at completion time.
     if (payment?.metadata?.productId !== IDEA_SUBMISSION_PRODUCT.productId) {
@@ -61,7 +74,7 @@ export async function POST(request) {
         txid,
         // The uid comes from the payment record returned by Pi, not the client.
         piUid: payment?.user_uid || null,
-        firebaseUid: decoded.uid,
+        firebaseUid,
         productId: IDEA_SUBMISSION_PRODUCT.productId,
         amount: IDEA_SUBMISSION_PRODUCT.amount,
         status: "completed",

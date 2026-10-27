@@ -14,11 +14,14 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import VerifyForm from "@/components/VerifyForm";
 import StoryReelsStrip from "@/components/StoryReelsStrip";
 import LegalLinks from "@/components/LegalLinks";
+import PiLoginButton from "@/components/PiLoginButton";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [ideas, setIdeas] = useState([]);
+  const [piAccount, setPiAccount] = useState({ loading: true, linked: false, username: null, error: "" });
+  const [piLinkMessage, setPiLinkMessage] = useState("");
   // Track which tab is active: "capture" or "verify"
   const [activeTab, setActiveTab] = useState("capture");
 
@@ -47,8 +50,58 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [user]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPiAccount() {
+      if (!user?.providerData?.some((provider) => provider.providerId === "google.com")) {
+        setPiAccount({ loading: false, linked: false, username: null, error: "" });
+        return;
+      }
+
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch("/api/pi/link", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || "Unable to check linked Pi account.");
+        }
+        if (!cancelled) {
+          setPiAccount({
+            loading: false,
+            linked: result.linked,
+            username: result.piUsername,
+            error: "",
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setPiAccount({ loading: false, linked: false, username: null, error: error.message });
+        }
+      }
+    }
+
+    loadPiAccount();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   const handleSignOut = async () => {
     await signOut(auth);
+  };
+
+  const handlePiLinkSuccess = (result) => {
+    setPiAccount({
+      loading: false,
+      linked: true,
+      username: result.piUsername,
+      error: "",
+    });
+    setPiLinkMessage(`Pi account @${result.piUsername} linked. Your vault and free captures are shared.`);
   };
   if (loading || !user) {
     return (
@@ -108,6 +161,31 @@ export default function DashboardPage() {
           title="Latest Reels"
           subtitle="Swipe and tap through your recent ideas."
         />
+
+        {user.providerData.some((provider) => provider.providerId === "google.com") && (
+          <section className="glass-card rounded-[2rem] border-border bg-surface p-6">
+            <h2 className="heading-3">Linked accounts</h2>
+            <p className="mt-2 text-sm text-muted">
+              Link Pi to use one Originly vault and free-capture balance with either sign-in method.
+              Existing Pi ideas are moved into this Google account when linked.
+            </p>
+            {piAccount.error && (
+              <p className="mt-3 text-sm text-rose-600">{piAccount.error}</p>
+            )}
+            {piAccount.linked ? (
+              <p className="mt-3 text-sm text-emerald-700">
+                Pi account @{piAccount.username} is linked.
+              </p>
+            ) : piAccount.loading ? (
+              <p className="mt-3 text-sm text-muted">Checking linked Pi account...</p>
+            ) : (
+              <div className="mt-4 max-w-sm">
+                <PiLoginButton linkAccount onSuccess={handlePiLinkSuccess} onError={setPiLinkMessage} />
+              </div>
+            )}
+            {piLinkMessage && <p className="mt-3 text-sm text-muted">{piLinkMessage}</p>}
+          </section>
+        )}
 
         <div className="glass-card overflow-hidden rounded-[2rem] border-border p-6 text-foreground bg-surface">
           <div className="card-header mb-6">

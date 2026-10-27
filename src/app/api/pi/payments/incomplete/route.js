@@ -3,11 +3,13 @@ import {
   verifyFirebaseIdToken,
   getPiPayment,
   completePiPayment,
+  getExpectedPiUid,
 } from "@/lib/piServer";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { IDEA_SUBMISSION_PRODUCT } from "@/config/payments";
 import { FieldValue } from "firebase-admin/firestore";
 import { rateLimit } from "@/lib/rateLimit";
+import { resolveCanonicalUid } from "@/lib/accountIdentity";
 
 /**
  * Completes an in-flight (incomplete) payment reported by the Pi SDK's
@@ -27,6 +29,7 @@ export async function POST(request) {
     if (!decoded) {
       return NextResponse.json({ ok: false, error: "Unauthorized." }, { status: 401 });
     }
+    const firebaseUid = await resolveCanonicalUid(decoded.uid);
 
     // The client forwards the PaymentDTO it received from the SDK.
     const { payment: incoming } = await request.json();
@@ -39,6 +42,10 @@ export async function POST(request) {
 
     // Re-fetch from Pi servers (source of truth).
     const payment = await getPiPayment(paymentId);
+    const expectedPiUid = await getExpectedPiUid(decoded);
+    if (!expectedPiUid || payment?.user_uid !== expectedPiUid) {
+      return NextResponse.json({ ok: false, error: "Pi payment account mismatch." }, { status: 403 });
+    }
     const resolvedTxid = txid || payment?.transaction?.txid;
 
     if (!resolvedTxid) {
@@ -47,7 +54,7 @@ export async function POST(request) {
       await adminDb.collection("payments").doc(paymentId).set(
         {
           paymentId,
-          firebaseUid: decoded.uid,
+          firebaseUid,
           status: "cancelled",
           consumed: false,
           updatedAt: FieldValue.serverTimestamp(),
@@ -65,7 +72,7 @@ export async function POST(request) {
         paymentId,
         txid: resolvedTxid,
         piUid: payment?.user_uid || null,
-        firebaseUid: decoded.uid,
+        firebaseUid,
         productId: payment?.metadata?.productId || IDEA_SUBMISSION_PRODUCT.productId,
         amount: Number(payment?.amount) || null,
         status: "completed",

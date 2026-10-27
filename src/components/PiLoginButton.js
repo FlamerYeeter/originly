@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signInWithCustomToken } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-export default function PiLoginButton({ onSuccess, onError }) {
+export default function PiLoginButton({ onSuccess, onError, linkAccount = false }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -43,11 +43,18 @@ export default function PiLoginButton({ onSuccess, onError }) {
         }
       );
 
-      const response = await fetch("/api/pi/auth", {
+      const currentUser = auth.currentUser;
+      if (linkAccount && !currentUser) {
+        throw new Error("Sign in with Google before linking your Pi account.");
+      }
+
+      const headers = { "Content-Type": "application/json" };
+      if (linkAccount) {
+        headers.Authorization = `Bearer ${await currentUser.getIdToken()}`;
+      }
+      const response = await fetch(linkAccount ? "/api/pi/link" : "/api/pi/auth", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify(authResponse),
       });
 
@@ -57,10 +64,11 @@ export default function PiLoginButton({ onSuccess, onError }) {
         throw new Error(result?.error || "Pi authentication failed.");
       }
 
-      // Sign into Firebase with the custom token from the server
-      await signInWithCustomToken(auth, result.customToken);
+      if (!linkAccount) {
+        await signInWithCustomToken(auth, result.customToken);
+      }
 
-      setMessage("Pi sign-in successful");
+      setMessage(linkAccount ? "Pi account linked successfully." : "Pi sign-in successful");
       onSuccess?.(result);
     } catch (error) {
       const errMessage = error?.message || "Pi sign-in failed.";
@@ -79,7 +87,13 @@ export default function PiLoginButton({ onSuccess, onError }) {
         disabled={loading}
         className="w-full rounded-lg bg-gradient-to-r from-[#3b82f6] to-[#14b8a6] px-4 py-3 font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading ? "Connecting to Pi..." : "Continue with Pi"}
+        {loading
+          ? linkAccount
+            ? "Linking Pi account..."
+            : "Connecting to Pi..."
+          : linkAccount
+          ? "Link Pi Account"
+          : "Continue with Pi"}
       </button>
 
       {message ? (

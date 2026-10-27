@@ -1,4 +1,4 @@
-import { adminAuth } from "@/lib/firebaseAdmin";
+import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
 
 const PI_API_BASE = "https://api.minepi.com/v2";
 
@@ -29,6 +29,40 @@ export async function verifyFirebaseIdToken(request) {
   } catch {
     return null;
   }
+}
+
+export async function verifyPiAccessToken(accessToken, expectedUid) {
+  if (typeof accessToken !== "string" || !accessToken || typeof expectedUid !== "string" || !expectedUid) {
+    throw new Error("Missing Pi access token or user ID.");
+  }
+
+  const response = await fetch(`${PI_API_BASE}/me`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    throw new Error("Pi access token verification failed.");
+  }
+
+  const piUser = await response.json();
+  if (piUser?.uid !== expectedUid) {
+    throw new Error("Pi user identity mismatch.");
+  }
+  return piUser;
+}
+
+export async function getExpectedPiUid(decoded) {
+  if (decoded.provider === "pi") {
+    if (typeof decoded.linkedPiUid === "string" && decoded.linkedPiUid) {
+      return decoded.linkedPiUid;
+    }
+    if (decoded.uid.startsWith("pi_")) {
+      return decoded.uid.slice(3);
+    }
+  }
+
+  const accountSnap = await adminDb.collection("linkedAccounts").doc(decoded.uid).get();
+  const account = accountSnap.exists ? accountSnap.data() : null;
+  return account?.status === "linked" ? account.piUid : null;
 }
 
 /**

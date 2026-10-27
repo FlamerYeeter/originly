@@ -1,0 +1,2 @@
+export const FREE_CAPTURE_LIMIT = 3;
+export const FREE_CAPTURE_REFILL_INTERVAL_MS = 12 * 60 * 60 * 1000;
