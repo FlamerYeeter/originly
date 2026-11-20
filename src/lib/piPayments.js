@@ -1,5 +1,6 @@
 import { auth } from "@/lib/firebase";
 import { buildIdeaSubmissionPaymentData } from "@/config/payments";
+import { PI_SANDBOX } from "@/lib/piNetwork";
 
 /**
  * Ensures the Pi SDK is loaded and initialized before any payment call.
@@ -12,7 +13,7 @@ export async function ensurePiReady() {
   if (!window.__piInitialized) {
     await window.Pi.init({
       version: "2.0",
-      sandbox: process.env.NODE_ENV !== "production",
+      sandbox: PI_SANDBOX,
     });
     window.__piInitialized = true;
   }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signInWithCustomToken } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { PI_SANDBOX } from "@/lib/piNetwork";
 
 export default function PiLoginButton({ onSuccess, onError, linkAccount = false }) {
   const [loading, setLoading] = useState(false);
@@ -20,7 +21,7 @@ export default function PiLoginButton({ onSuccess, onError, linkAccount = false 
       try {
         window.Pi.init({
           version: "2.0",
-          sandbox: process.env.NODE_ENV !== "production",
+          sandbox: PI_SANDBOX,
         });
         window.__piInitialized = true;
       } catch (error) {

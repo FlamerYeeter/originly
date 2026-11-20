@@ -20,6 +20,17 @@ You can start editing the page by modifying `app/page.js`. The page auto-updates
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Pi Network deployment
+
+`NEXT_PUBLIC_PI_NETWORK` selects the Pi SDK network at build time:
+
+- `testnet` (the default) for local development and preview deployments.
+- `mainnet` only for the production deployment after the Pi Developer Portal app, domain validation, and server API key are configured for Mainnet.
+
+Set this variable in the deployment environment **before building**. Next.js embeds `NEXT_PUBLIC_` variables in the client bundle at build time, so changing a runtime setting alone does not switch an already-built site. Redeploy after changing networks, and keep the preview environment on `testnet`.
+
+Before enabling Mainnet, verify Pi sign-in, a small payment through approval and completion, and the resulting record in the production app. If a rollback is needed, redeploy the previous production build or build with `NEXT_PUBLIC_PI_NETWORK=testnet`; ensure the corresponding Pi app/API credentials are also appropriate for that network. Keep the prior build available until production checks pass.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
